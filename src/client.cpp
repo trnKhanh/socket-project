@@ -21,6 +21,8 @@ int main(int argc, char *argv[]) {
         printf("WSAStartup failed: %d\n", iResult);
         return 1;
     }
+    cout << "Initialize Winsock.\n";
+    pause();
 
     // Create a TCP socket
     SOCKET connectSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -29,6 +31,8 @@ int main(int argc, char *argv[]) {
         WSACleanup();
         return 1;
     }
+    cout << "Create a TCP socket.\n";
+    pause();
 
     // Connect to the server
     SOCKADDR_IN serverAddr;
@@ -42,6 +46,9 @@ int main(int argc, char *argv[]) {
         WSACleanup();
         return 1;
     }
+
+    cout << "Connect to the server.\n";
+    pause();
 
     // Send the request to the server
     while(true){
