@@ -12,6 +12,7 @@
 using std::cout;
 
 void pause();
+void listProcess();
 
 int main(int argc, char *argv[]) {
     // Initialize Winsock
@@ -101,7 +102,7 @@ int main(int argc, char *argv[]) {
             }
         } else if (iResult == 0) {
             // Client closed connection
-            printf("Client disconnected\n");
+            cout << "Client disconnected\n";
         } else {
             printf("recv failed: %d\n", WSAGetLastError());
         }
@@ -115,6 +116,10 @@ int main(int argc, char *argv[]) {
     WSACleanup();
 
     return 0;
+}
+
+void listProcess(){
+
 }
 
 void pause(){

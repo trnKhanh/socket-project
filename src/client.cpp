@@ -2,13 +2,21 @@
 #include <windows.h>
 #include <iphlpapi.h>
 #include <stdio.h>
+#include "menu.h"
 
 #pragma comment(lib, "Ws2_32.lib")
+
+void listApp();
+void listProcess(int iResult, SOCKET& connectSock);
+void screenCap();
+void keyLog();
+void DFS();
+void pause();
 
 int main(int argc, char *argv[]) {
     // Initialize Winsock
     WSADATA wsaData;
-    int iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
+    int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
     if (iResult != 0) {
         printf("WSAStartup failed: %d\n", iResult);
         return 1;
@@ -36,13 +44,40 @@ int main(int argc, char *argv[]) {
     }
 
     // Send the request to the server
+    while(true){
+        int type = menu();
+        bool iexit = false;
+        switch(type){
+            case 1: listApp(); break;
+            case 2: listProcess(iResult, connectSock); break;
+            case 3: screenCap(); break;
+            case 4: keyLog(); break;
+            case 5: DFS(); break;
+            case 6: iexit = true; break;
+        }
+        if(iexit == true)
+            break;
+    }
+
+    // Clean up
+    closesocket(connectSock);
+    WSACleanup();
+
+    return 0;
+}
+
+void listApp(){
+    return;
+}
+
+void listProcess(int iResult, SOCKET& connectSock){
     const char* request = "LISTPROCESSES";
     iResult = send(connectSock, request, strlen(request), 0);
     if (iResult == SOCKET_ERROR) {
         printf("send failed: %d\n", WSAGetLastError());
         closesocket(connectSock);
         WSACleanup();
-        return 1;
+        return;
     }
 
     // Receive the response from the server
@@ -61,10 +96,20 @@ int main(int argc, char *argv[]) {
     } else {
         printf("recv failed: %d\n", WSAGetLastError());
     }
+}
 
-    // Clean up
-    closesocket(connectSock);
-    WSACleanup();
+void screenCap(){
+    return;
+}
 
-    return 0;
+void keyLog(){
+    return;
+}
+
+void DFS(){
+    return;
+}
+
+void pause(){
+    system("pause");
 }
