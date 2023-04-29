@@ -4,17 +4,20 @@
 
 Response::Response(uint8_t type, uint32_t errcode, uint64_t length, void *data)
 {
-    this->type = type;
-    this->errcode = errcode;
-    this->length = length;
-    this->data = malloc(length);
-    memcpy(this->data, data, length);
+    this->header.type = type;
+    this->header.errcode = errcode;
+    this->header.length = length;
+    if (data != NULL)
+    {
+        this->data = malloc(length);
+        memcpy(this->data, data, length);
+    } else this->data = NULL;
 }
 Response::Response()
 {
-    this->type = 0;
-    this->errcode = 0;
-    this->length = 0;
+    this->header.type = 0;
+    this->header.errcode = 0;
+    this->header.length = 0;
     this->data = NULL;
 }
 Response::~Response()
@@ -22,41 +25,92 @@ Response::~Response()
     if (this->data != NULL)
         free(this->data);
 }
-
+Response::Response(const Response &r)
+{
+    this->header.type = r.header.type;
+    this->header.errcode = r.header.errcode;
+    this->header.length = r.header.length;
+    this->data = malloc(this->header.length);
+    memcpy(this->data, r.data, this->header.length);
+}
+Response& Response::operator = (const Response &r)
+{
+    this->header.type = r.header.type;
+    this->header.errcode = r.header.errcode;
+    this->header.length = r.header.length;
+    this->data = malloc(this->header.length);
+    memcpy(this->data, r.data, this->header.length);
+    return *this;
+}
+uint8_t Response::type()
+{
+    return this->header.type;
+}
 int sendResponse(int sockfd, const Response &msg, int flag)
 {
-    if (sendAll(sockfd, &msg.type, sizeof(msg.type), 0) == -1)
-        return -1;
-
-    uint32_t errcode = htonl(msg.errcode);
-    if (sendAll(sockfd, &errcode, sizeof(errcode), 0) == -1)
+    struct {
+        uint8_t type;
+        uint32_t errcode; 
+        uint64_t length;
+    } header;
+    header.type = msg.header.type;
+    header.errcode = htonl(msg.header.errcode);
+    header.length = htonll(msg.header.length);
+    
+    if (sendAll(sockfd, &header, sizeof(header), 0) == -1)
         return -1;
     
-    uint64_t length = htonll(msg.length);
-    if (sendAll(sockfd, &length, sizeof(length), 0) == -1)
-        return -1;
-    
-    if (sendAll(sockfd, msg.data, msg.length, 0) == -1)
+    if (sendAll(sockfd, msg.data, msg.header.length, 0) == -1)
         return -1;
 
     return 0;
 }
 int recvResponse(int sockfd, Response &msg, int flag)
 {
-    if (recvAll(sockfd, &msg.type, sizeof(msg.type), 0) == -1)
+    if (recvAll(sockfd, &msg.header, sizeof(msg.header), 0) == -1)
         return -1;
-    
-    if (recvAll(sockfd, &msg.errcode, sizeof(msg.errcode), 0) == -1)
-        return -1;    
-    msg.errcode = ntohl(msg.errcode);
 
-    if (recvAll(sockfd, &msg.length, sizeof(msg.length), 0) == -1)
-        return -1;
-    msg.length = ntohll(msg.length);
+    msg.header.errcode = ntohl(msg.header.errcode);
+    msg.header.length = ntohll(msg.header.length);
 
     if (msg.data != NULL) free(msg.data);
-    msg.data = malloc(msg.length);
-    if (recvAll(sockfd, msg.data, msg.length, 0) == -1)
+    msg.data = malloc(msg.header.length);
+    if (recvAll(sockfd, msg.data, msg.header.length, 0) == -1)
+        return -1;
+
+    return 0;
+}
+
+
+int sendtoResponse(int sockfd, const Response &msg, int flag, const sockaddr *addr, socklen_t addrlen)
+{
+    struct {
+        uint8_t type;
+        uint32_t errcode; 
+        uint64_t length;
+    } header;
+    header.type = msg.header.type;
+    header.errcode = htonl(msg.header.errcode);
+    header.length = htonll(msg.header.length);
+    if (sendtoAll(sockfd, &header, sizeof(header), 0, addr, addrlen) == -1)
+        return -1;
+    
+    if (sendtoAll(sockfd, msg.data, msg.header.length, 0, addr, addrlen) == -1)
+        return -1;
+
+    return 0;
+}
+int recvfromResponse(int sockfd, Response &msg, int flag, sockaddr *addr, socklen_t *addrlen)
+{
+    if (recvfromAll(sockfd, &msg.header, sizeof(msg.header), 0, addr, addrlen) == -1)
+        return -1;
+
+    msg.header.errcode = ntohl(msg.header.errcode);
+    msg.header.length = ntohll(msg.header.length);
+
+    if (msg.data != NULL) free(msg.data);
+    msg.data = malloc(msg.header.length);
+    if (recvfromAll(sockfd, msg.data, msg.header.length, 0, addr, addrlen) == -1)
         return -1;
 
     return 0;
