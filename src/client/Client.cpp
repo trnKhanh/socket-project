@@ -13,7 +13,7 @@ Client::Client()
 {
     std::vector<std::string> servers;
     this->discover(servers);
-
+    std::cout << "Found following server:\n";
     for (auto u: servers)
     {
         std::cout << u << "\n";

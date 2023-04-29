@@ -174,7 +174,7 @@ void Server::start()
                         cout << "Receive discover message from " << getIpStr((sockaddr *)&remote_address) << "::"; 
                         cout << ntohs(((sockaddr_in *)&remote_address)->sin_port) << "\n";
                         Response msg(DISCOVER_RESPONSE, OK_ERRCODE, 0, NULL);
-                        addrlen = sizeof(remote_address);
+                        
                         sendtoResponse(disfd, msg, 0, (sockaddr *)&remote_address, addrlen);
                     }
                 } 
