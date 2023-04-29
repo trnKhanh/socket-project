@@ -12,11 +12,51 @@
 Client::Client()
 {
     std::vector<std::string> servers;
-    this->discover(servers);
+    if (this->discover(servers) == -1) 
+        exit(1);
+    
     std::cout << "Found following server:\n";
     for (auto u: servers)
     {
         std::cout << u << "\n";
+    }
+
+    std::cout << "Choose server to connect: ";
+    std::string name = servers[0];
+    std::cin >> name;
+
+    addrinfo hints, *servinfo;
+    int status, yes = 1;
+
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+    if ((status = getaddrinfo(name.c_str(), SERVER_PORT, &hints, &servinfo)) != 0)
+    {
+        std::cerr << "client: getaddrinfo " << gai_strerror(status) << "\n";
+        exit(1);
+    }
+
+    addrinfo *p = servinfo;
+    for (;p != NULL; p = p->ai_next)
+    {
+        if ((this->sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1)
+        {
+            perror("client: socket");
+            continue;
+        }
+        if (connect(this->sockfd, p->ai_addr, p->ai_addrlen) == -1)
+        {
+            perror("client: connect");
+            continue;
+        }
+        break;
+    }
+    freeaddrinfo(servinfo);
+    if (p == NULL)
+    {
+        std::cerr << "client: fail to connect\n";
+        exit(1);
     }
 }
 Client::~Client()
