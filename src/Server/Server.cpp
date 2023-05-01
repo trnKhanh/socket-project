@@ -10,7 +10,9 @@
 #include "../Message/Request.h"
 #include "../Message/Response.h"
 
-using namespace std;
+using std::cin;
+using std::cout;
+using std::cerr;
 
 Server::~Server(){
     cout << "Server closed." << "\n";
@@ -57,15 +59,15 @@ Server::Server(const char* port){
     addrinfo *p = NULL;
     for (p = res; p != NULL; p = p->ai_next){
         if ((this->listener = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1){
-            perror("server: socket");
+            cerr << "Server: socket\n";
             continue;
         }
         if (setsockopt(this->listener, SOL_SOCKET, SO_REUSEADDR, (char*)&yes, sizeof(int)) == -1) {
-            perror("server: setsockopt");
+            cerr << "Server: setsockopt\n";
             exit(1); 
         }
         if (bind(this->listener, p->ai_addr, p->ai_addrlen) == -1){
-            perror("server: bind");
+            cerr << "Server: bind\n";
             closesocket(this->listener);
             continue;
         }
@@ -81,7 +83,8 @@ Server::Server(const char* port){
         exit(1);
     }
 
-    if (listen(this->listener, BACKLOG) == -1){
+    status = listen(this->listener, BACKLOG);
+    if (status == -1){
         perror("Server: listen");
         exit(1);
     }
@@ -103,15 +106,15 @@ Server::Server(const char* port){
     p = NULL;
     for (p = res; p != NULL; p = p->ai_next){
         if ((this->disfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1){
-            perror("Server: socket");
+            cerr << "Server: socket\n";
             continue;
         }
         if (setsockopt(this->disfd, SOL_SOCKET, SO_REUSEADDR, (char*) &yes, sizeof(int)) == -1) {
-            perror("Server: setsockopt");
+            cerr << "Server: setsockopt";
             exit(1); 
         }
         if (bind(this->disfd, p->ai_addr, p->ai_addrlen) == -1){
-            perror("Server: bind");
+            cerr << "Server: bind\n";
             closesocket(this->disfd);
             continue;
         }
@@ -133,16 +136,17 @@ Server::Server(const char* port){
 }
 
 void Server::start(){
-    int newfd;
+    SOCKET newfd;
 
     sockaddr_storage remote_address;
     socklen_t addrlen;
 
+    cout << "Server is running...\n";
     char buffer[256];
     while (true){
         int poll_count = WSAPoll(&pfds[0], pfds.size(), -1);
         if (poll_count == -1){
-            perror("poll");
+            cerr << "poll\n";
             exit(1);
         }
 
@@ -154,7 +158,7 @@ void Server::start(){
                     addrlen = sizeof(remote_address);
                     newfd = accept(listener, (sockaddr *)&remote_address, &addrlen);
                     if (newfd == -1){
-                        perror("accept");
+                        cerr << "accept\n";
                     } 
                     else{
                         pfds.emplace_back();
@@ -179,7 +183,7 @@ void Server::start(){
                 } 
                 else{
                     int nbyte = recv(pfd.fd, buffer, sizeof buffer, 0);
-                    cout << "UNKNOWN_MASSGE" << '\n';
+                    cout << "UNKNOWN_MESSAGE" << '\n';
                 }
             }
         }

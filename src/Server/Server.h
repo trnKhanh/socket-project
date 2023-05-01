@@ -14,9 +14,9 @@ using std::cerr;
 
 class Server{
 private:
-    int disfd;
-    int listener;
-    vector <pollfd> pfds;
+    SOCKET disfd;
+    SOCKET listener;
+    vector <WSAPOLLFD> pfds;
 public:
     Server(const char* port);
     ~Server();

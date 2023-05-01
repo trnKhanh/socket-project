@@ -57,10 +57,12 @@ int sendResponse(int sockfd, const Response &msg, int flag){
     header.errcode = htonl(msg.header.errcode);
     header.length = my_htonll(msg.header.length);
     
-    if (sendAll(sockfd, &header, sizeof(header), 0) == -1)
+    int retCode = sendAll(sockfd, &header, sizeof(header), 0);
+    if (retCode == -1)
         return -1;
     
-    if (sendAll(sockfd, msg.data, msg.header.length, 0) == -1)
+    retCode = sendAll(sockfd, msg.data, msg.header.length, 0);
+    if (retCode == -1)
         return -1;
 
     return 0;
@@ -75,8 +77,10 @@ int recvResponse(int sockfd, Response &msg, int flag){
 
     if (msg.data != NULL) free(msg.data);
     msg.data = malloc(msg.header.length);
-    if (recvAll(sockfd, msg.data, msg.header.length, 0) == -1)
-        return -1;
+
+    int retCode = recvAll(sockfd, msg.data, msg.header.length, 0);
+    if (retCode == -1)
+        return retCode;
 
     return 0;
 }
@@ -91,26 +95,32 @@ int sendtoResponse(int sockfd, const Response &msg, int flag, const sockaddr *ad
     header.errcode = htonl(msg.header.errcode);
     header.length = my_htonll(msg.header.length);
 
-    if (sendtoAll(sockfd, &header, sizeof(header), 0, addr, addrlen) == -1)
-        return -1;
+    int retCode = sendtoAll(sockfd, &header, sizeof(header), 0, addr, addrlen);
+    if (retCode == -1)
+        return retCode;
     
-    if (sendtoAll(sockfd, msg.data, msg.header.length, 0, addr, addrlen) == -1)
-        return -1;
+    retCode = sendtoAll(sockfd, msg.data, msg.header.length, 0, addr, addrlen);
+    if (retCode == -1)
+        return retCode;
 
     return 0;
 }
 
 int recvfromResponse(int sockfd, Response &msg, int flag, sockaddr *addr, socklen_t *addrlen){
-    if (recvfromAll(sockfd, &msg.header, sizeof(msg.header), 0, addr, addrlen) == -1)
-        return -1;
+    int retCode = recvfromAll(sockfd, &msg.header, sizeof(msg.header), 0, addr, addrlen);
+    if (retCode == -1)
+        return retCode;
 
     msg.header.errcode = ntohl(msg.header.errcode);
     msg.header.length = my_ntohll(msg.header.length);
 
-    if (msg.data != NULL) free(msg.data);
+    if (msg.data != NULL) 
+        free(msg.data);
     msg.data = malloc(msg.header.length);
-    if (recvfromAll(sockfd, msg.data, msg.header.length, 0, addr, addrlen) == -1)
-        return -1;
+
+    retCode = recvfromAll(sockfd, msg.data, msg.header.length, 0, addr, addrlen);
+    if (retCode == -1)
+        return retCode;
 
     return 0;
 }

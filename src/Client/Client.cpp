@@ -36,9 +36,11 @@ Client::Client(){
     cout << "WSAStartup sucess.\n\n";
 
     vector <string> servers;
-    if (this->discover(servers) == -1) 
-        exit(1);
+    retCode = this->discover(servers);
     
+    if (retCode == -1) 
+        exit(1);
+
     cout << "Found following server:\n";
     for (auto server: servers)
         cout << server << "\n";
@@ -61,11 +63,11 @@ Client::Client(){
     addrinfo *p = servinfo;
     for (;p != NULL; p = p->ai_next){
         if ((this->sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1){
-            perror("client: socket");
+            cerr << "Client: socket\n";
             continue;
         }
         if (connect(this->sockfd, p->ai_addr, p->ai_addrlen) == -1){
-            perror("client: connect");
+            cerr << "Client: connect\n";
             continue;
         }
         break;
@@ -85,7 +87,7 @@ Client::~Client(){
 
 int Client::discover(vector<string> &servers){
     int status;
-    int disfd;
+    SOCKET disfd;
     int yes = 1;
     sockaddr_storage serverAddr;
     socklen_t addrlen = sizeof(serverAddr);
@@ -97,28 +99,29 @@ int Client::discover(vector<string> &servers){
     hints.ai_flags = AI_PASSIVE;
 
     if ((status = getaddrinfo(NULL, CLIENT_PORT, &hints, &addr)) != 0){
-        cerr << "client: getaddrinfo: " << gai_strerror(status) << "\n";
+        cerr << "Client: getaddrinfo: " << gai_strerror(status) << "\n";
         return -1;
     }
 
     addrinfo *p = addr;
     for (;p != NULL; p = p->ai_next){
         if ((disfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1){
-            perror("client: socket");
+            cerr << "Client: socket\n";
             continue;
         }
         if (setsockopt(disfd, SOL_SOCKET, SO_BROADCAST, (char*)&yes, sizeof(yes)) == -1){
-            perror("client: setsockopt");
+            cerr << "Client: setsockopt\n";
             freeaddrinfo(addr);
             return -1;
         }
         if (setsockopt(disfd, SOL_SOCKET, SO_REUSEADDR, (char*)&yes, sizeof(yes)) == -1){
-            perror("client: setsockopt");
+            cerr << "Client: setsockopt\n";
             freeaddrinfo(addr);
             return -1;
         }
         if (bind(disfd, p->ai_addr, p->ai_addrlen) == -1){
             perror("client: bind");
+            cerr << "Client: bind\n";
             closesocket(disfd);
             continue;
         }
@@ -126,7 +129,7 @@ int Client::discover(vector<string> &servers){
     }
 
     if (p == NULL){
-        cerr << "client: fail to bind socket\n";
+        cerr << "Client: fail to bind socket\n";
         freeaddrinfo(addr);
         return -1;
     }
@@ -152,24 +155,27 @@ int Client::discover(vector<string> &servers){
     sendtoRequest(disfd, msg, 0, p->ai_addr, p->ai_addrlen);
     freeaddrinfo(addr);
 
-    pollfd pfds[1];
+    WSAPOLLFD pfds[1];
     pfds[0].events = POLLIN;
     pfds[0].fd = disfd;
     while(true){
         int rv = WSAPoll(pfds, 1, 5000);
         if (rv == -1){
+            cerr << "poll\n";
             closesocket(disfd); 
-            perror("poll");
             return -1;
         }
-        if (rv == 0) // time out
+        if (rv == 0){ // time out
+            cout << "Time out...\n";
             break;
+        }
         
         Response buffer;
         recvfromResponse(disfd, buffer, 0, (sockaddr*)&serverAddr, &addrlen);
         if (buffer.type() == DISCOVER_RESPONSE)
             servers.push_back(getIpStr((sockaddr *)&serverAddr));
     }
+
     closesocket(disfd);
     return 0;
 }
@@ -190,7 +196,7 @@ int Client::listProcesss(){
     const char* request = "LISTPROCESSES";
     int iResult = send(sockfd, request, strlen(request), 0);
     if (iResult == SOCKET_ERROR) {
-        cout << "Send failed: " << WSAGetLastError() << '\n';
+        cerr << "Send failed: " << WSAGetLastError() << '\n';
         return -1;
     }
 
@@ -199,7 +205,7 @@ int Client::listProcesss(){
     iResult = recv(sockfd, recvbuf, sizeof(recvbuf), 0);
     if (iResult > 0) {
         // Print the process list to the console
-        printf("Running processes:\n");
+        cout << "Running processes:\n";
         printf("%.*s", iResult, recvbuf);
         while (iResult = recv(sockfd, recvbuf, sizeof(recvbuf), 0)) {
             printf("%.*s", iResult, recvbuf);
