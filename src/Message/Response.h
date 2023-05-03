@@ -2,7 +2,23 @@
 #include <stdint.h>
 #include <WS2tcpip.h>
 
-#define DISCOVER_RESPONSE 0x80
+// Structure Macro message
+
+#define DISCOVER_RESPONSE (1 << 7)
+
+#define LIST_APP_RESPONSE (1 << 3) | (1 << 0)
+#define STOP_APP_RESPONSE (1 << 3) | (1 << 1)
+#define STOP_APP_RESPONSE (1 << 3) | (1 << 1) | (1 << 0)
+
+#define LIST_PROCESS_RESPONSE (1 << 4) | (1 << 0)
+#define KILL_PROCESS_RESPONSE (1 << 4) | (1 << 1)
+
+#define SCREENSHOT_RESPONSE (1 << 4) | (1 << 3) | (1 << 0)
+
+#define START_KEYLOG_RESPONSE (1 << 5) | (1 << 0)
+#define STOP_KEYLOG_RESPONSE (1 << 5) | (1 << 1)
+
+#define DIR_TREE_RESPONSE (1 << 5) | (1 << 3) | (1 << 0)
 
 #define OK_ERRCODE 0
 #define FAIL_ERRCODE 1  

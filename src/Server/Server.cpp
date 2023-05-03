@@ -191,36 +191,36 @@ void Server::start(){
                 else{
                     int nbyte = recv(pfd.fd, buffer, sizeof(buffer), 0);
                     continue;
-                    // if (strncmp(buffer, "LISTPROCESSES", 13) == 0) {
-                    //     DWORD aProcesses[1024], cbNeeded, cProcesses;
-                    //     if (EnumProcesses(aProcesses, sizeof(aProcesses), &cbNeeded)) {
-                    //         // Calculate how many process identifiers were returned
-                    //         cProcesses = cbNeeded / sizeof(DWORD);
-                    //         // Get the process names and send them to the client
-                    //         char numProc[20];
-                    //         itos(numProc, cProcesses);
-                    //         cout << cProcesses << '\n';
-                    //         //send(clientSock, numProc, strlen(numProc), 0);
-                    //         for (DWORD i = 0; i < cProcesses; i++) {
-                    //             HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, aProcesses[i]);
-                    //             if (hProcess != NULL) {
-                    //                 char procName[MAX_PATH];
-                    //                 if (GetModuleBaseNameA(hProcess, NULL, procName, sizeof(procName)) > 0) {
-                    //                     send(pfd.fd, procName, strlen(procName), 0);
-                    //                     send(pfd.fd, "\n", 1, 0);
-                    //                 }
-                    //                 CloseHandle(hProcess);
-                    //             }
-                    //         }
-                    //     }
-                    // }
-                    // else if (strncmp(buffer, "DISCONNECT", 10) == 0)
-                    //     break;   
-                    // else {
-                    //     // Unknown request
-                    //     const char* response = "UNKNOWN REQUEST\n";
-                    //     send(pfd.fd, response, strlen(response), 0);
-                    // }
+                    if (strncmp(buffer, "LISTPROCESSES", 13) == 0) {
+                        DWORD aProcesses[1024], cbNeeded, cProcesses;
+                        if (EnumProcesses(aProcesses, sizeof(aProcesses), &cbNeeded)) {
+                            // Calculate how many process identifiers were returned
+                            cProcesses = cbNeeded / sizeof(DWORD);
+                            // Get the process names and send them to the client
+                            char numProc[20];
+                            my_itos(numProc, cProcesses);
+                            cout << cProcesses << '\n';
+                            //send(clientSock, numProc, strlen(numProc), 0);
+                            for (DWORD i = 0; i < cProcesses; i++) {
+                                HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, aProcesses[i]);
+                                if (hProcess != NULL) {
+                                    char procName[MAX_PATH];
+                                    if (GetModuleBaseNameA(hProcess, NULL, procName, sizeof(procName)) > 0) {
+                                        send(pfd.fd, procName, strlen(procName), 0);
+                                        send(pfd.fd, "\n", 1, 0);
+                                    }
+                                    CloseHandle(hProcess);
+                                }
+                            }
+                        }
+                    }
+                    else if (strncmp(buffer, "DISCONNECT", 10) == 0)
+                        break;   
+                    else {
+                        // Unknown request
+                        const char* response = "UNKNOWN REQUEST\n";
+                        send(pfd.fd, response, strlen(response), 0);
+                    }
                 }
             }
         }

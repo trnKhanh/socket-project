@@ -11,6 +11,8 @@ Request::Request(uint8_t type, uint64_t length, void *data){
         this->data = malloc(length);
         memcpy(this->data, data, length);
     }
+    else
+        this->data = NULL;
 }
 
 Request::Request(){

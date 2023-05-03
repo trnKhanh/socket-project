@@ -18,7 +18,7 @@ uint64_t my_ntohll(uint64_t value){
     return result;
 }
 
-void itos(char* res, int n){
+void my_itos(char* res, int n){
     int i = 0;
     while(n){
         res[i++] = char(n % 10 + '0');

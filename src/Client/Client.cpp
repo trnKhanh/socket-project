@@ -37,7 +37,7 @@ Client::Client(){
 
     vector <string> servers;
     retCode = this->discover(servers);
-    servers.push_back("192.168.1.135");
+    cout << "ok" << std::endl;
     
     if (retCode == -1) 
         exit(1);
@@ -185,13 +185,13 @@ int Client::discover(vector<string> &servers){
         }
         
         Response buffer;
+        addrlen = sizeof(serverAddr);
         int retCode = recvfromResponse(disfd, buffer, 0, (sockaddr*)&serverAddr, &addrlen);
         if(retCode == -1)
             continue;
         if (buffer.type() == DISCOVER_RESPONSE)
             servers.push_back(getIpStr((sockaddr*) &serverAddr));
     }
-
     closesocket(disfd);
     return 0;
 }

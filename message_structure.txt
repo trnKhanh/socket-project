@@ -1,0 +1,44 @@
+REQUEST MESSAGE
+header: 5 bytes
+    1 bit: IS_DIS (0: is not discover msg, 1: is discover msg) 
+    7 bits: CMD TYPE:
+        NOTCMD: 0
+
+        LIST_APP: 8 + 1
+        START_APP: 8 + 2
+        STOP_APP: 8 + 3
+
+        LIST_PROC: 16 + 1
+        KILL_PROC: 16 + 2
+
+        SCREENSHOT: 24 + 1
+
+        START_KEYLOG: 32 + 1
+        STOP_KEYLOG: 32 + 2
+
+        DIR_TREE: 40 + 1
+    4 bytes (u_int32): body_length (in network byte order)
+body:
+    Depends on CMD_TYPE:
+        LIST_APP: empty
+        START_APP: app_name
+        STOP_APP: app_name
+
+        LIST_PROC: empty
+        KILL_PROC: PID (u_int32)
+
+        SCREENSHOT: empty
+
+        START_KEYLOG: empty
+        STOP_KEYLOG: empty
+
+        DIR_TREE: empty
+
+RESPONSE MESSAGE
+header: 10 bytes
+    1 bit: IS_DIS_RES
+    7 padding bits
+    4 bytes (u_int32): ERROR_CODE 
+    4 bytes (u_int32): body_length (in network byte order)
+body:
+    <data>

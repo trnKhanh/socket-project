@@ -3,8 +3,23 @@
 #include "WinSock2.h"
 #include <WS2tcpip.h>
 
-#define DISCOVER_REQUEST 0x80
-#define LIST_PROCESS_REQUEST 0x82
+// Structure Macro message
+
+#define DISCOVER_REQUEST (1 << 7)
+
+#define LIST_APP_REQUEST (1 << 3) | (1 << 0)
+#define STOP_APP_REQUEST (1 << 3) | (1 << 1)
+#define STOP_APP_REQUEST (1 << 3) | (1 << 1) | (1 << 0)
+
+#define LIST_PROCESS_REQUEST (1 << 4) | (1 << 0)
+#define KILL_PROCESS_REQUEST (1 << 4) | (1 << 1)
+
+#define SCREENSHOT_REQUEST (1 << 4) | (1 << 3) | (1 << 0)
+
+#define START_KEYLOG_REQUEST (1 << 5) | (1 << 0)
+#define STOP_KEYLOG_REQUEST (1 << 5) | (1 << 1)
+
+#define DIR_TREE_REQUEST (1 << 5) | (1 << 3) | (1 << 0)
 
 class Request {
     struct {
