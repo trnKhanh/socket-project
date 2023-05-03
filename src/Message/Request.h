@@ -4,6 +4,7 @@
 #include <WS2tcpip.h>
 
 #define DISCOVER_REQUEST 0x80
+#define LIST_PROCESS_REQUEST 0x82
 
 class Request {
     struct {

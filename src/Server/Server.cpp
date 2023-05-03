@@ -5,8 +5,10 @@
 #include <vector>
 #include <signal.h>
 #include <string>
+#include <psapi.h>
 
 #include "../Utils/InUtils.h"
+#include "../Utils/ConvertUtils.h"
 #include "../Message/Request.h"
 #include "../Message/Response.h"
 
@@ -51,14 +53,16 @@ Server::Server(const char* port){
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
 
-    if ((status = getaddrinfo(NULL, port, &hints, &res)) == -1){
+    status = getaddrinfo(NULL, port, &hints, &res);
+    if (status == -1){
         cerr << "getaddrinfo: " << gai_strerror(status) << "\n";
         exit(1);
     }
 
     addrinfo *p = NULL;
     for (p = res; p != NULL; p = p->ai_next){
-        if ((this->listener = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1){
+        this->listener = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
+        if (this->listener == INVALID_SOCKET){
             cerr << "Server: socket\n";
             continue;
         }
@@ -85,7 +89,7 @@ Server::Server(const char* port){
 
     status = listen(this->listener, BACKLOG);
     if (status == -1){
-        perror("Server: listen");
+        cerr << "Server: listen\n";
         exit(1);
     }
 
@@ -98,22 +102,23 @@ Server::Server(const char* port){
     hints.ai_socktype = SOCK_DGRAM;
     hints.ai_flags = AI_PASSIVE;
 
-    if ((status = getaddrinfo(NULL, port, &hints, &res)) == -1){
+    status = getaddrinfo(NULL, port, &hints, &res);
+    if (status == SOCKET_ERROR){
         cerr << "getaddrinfo: " << gai_strerror(status) << "\n";
         exit(1);
     }
 
-    p = NULL;
     for (p = res; p != NULL; p = p->ai_next){
-        if ((this->disfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1){
+        this->disfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
+        if (this->disfd == INVALID_SOCKET){
             cerr << "Server: socket\n";
             continue;
         }
-        if (setsockopt(this->disfd, SOL_SOCKET, SO_REUSEADDR, (char*) &yes, sizeof(int)) == -1) {
+        if (setsockopt(this->disfd, SOL_SOCKET, SO_REUSEADDR, (char*) &yes, sizeof(int)) == SOCKET_ERROR) {
             cerr << "Server: setsockopt";
             exit(1); 
         }
-        if (bind(this->disfd, p->ai_addr, p->ai_addrlen) == -1){
+        if (bind(this->disfd, p->ai_addr, p->ai_addrlen) == SOCKET_ERROR){
             cerr << "Server: bind\n";
             closesocket(this->disfd);
             continue;
@@ -144,7 +149,7 @@ void Server::start(){
     cout << "Server is running...\n";
     char buffer[256];
     while (true){
-        int poll_count = WSAPoll(&pfds[0], pfds.size(), -1);
+        int poll_count = WSAPoll(&pfds[0], pfds.size(), -1); // wait util events occur
         if (poll_count == -1){
             cerr << "poll\n";
             exit(1);
@@ -179,11 +184,43 @@ void Server::start(){
                         Response msg(DISCOVER_RESPONSE, OK_ERRCODE, 0, NULL);
                         
                         sendtoResponse(disfd, msg, 0, (sockaddr *)&remote_address, addrlen);
+                        continue;
                     }
+                    
                 } 
                 else{
-                    int nbyte = recv(pfd.fd, buffer, sizeof buffer, 0);
-                    cout << "UNKNOWN_MESSAGE" << '\n';
+                    int nbyte = recv(pfd.fd, buffer, sizeof(buffer), 0);
+                    continue;
+                    // if (strncmp(buffer, "LISTPROCESSES", 13) == 0) {
+                    //     DWORD aProcesses[1024], cbNeeded, cProcesses;
+                    //     if (EnumProcesses(aProcesses, sizeof(aProcesses), &cbNeeded)) {
+                    //         // Calculate how many process identifiers were returned
+                    //         cProcesses = cbNeeded / sizeof(DWORD);
+                    //         // Get the process names and send them to the client
+                    //         char numProc[20];
+                    //         itos(numProc, cProcesses);
+                    //         cout << cProcesses << '\n';
+                    //         //send(clientSock, numProc, strlen(numProc), 0);
+                    //         for (DWORD i = 0; i < cProcesses; i++) {
+                    //             HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, aProcesses[i]);
+                    //             if (hProcess != NULL) {
+                    //                 char procName[MAX_PATH];
+                    //                 if (GetModuleBaseNameA(hProcess, NULL, procName, sizeof(procName)) > 0) {
+                    //                     send(pfd.fd, procName, strlen(procName), 0);
+                    //                     send(pfd.fd, "\n", 1, 0);
+                    //                 }
+                    //                 CloseHandle(hProcess);
+                    //             }
+                    //         }
+                    //     }
+                    // }
+                    // else if (strncmp(buffer, "DISCONNECT", 10) == 0)
+                    //     break;   
+                    // else {
+                    //     // Unknown request
+                    //     const char* response = "UNKNOWN REQUEST\n";
+                    //     send(pfd.fd, response, strlen(response), 0);
+                    // }
                 }
             }
         }

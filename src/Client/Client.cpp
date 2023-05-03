@@ -37,6 +37,7 @@ Client::Client(){
 
     vector <string> servers;
     retCode = this->discover(servers);
+    servers.push_back("192.168.1.135");
     
     if (retCode == -1) 
         exit(1);
@@ -56,18 +57,21 @@ Client::Client(){
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
     if ((status = getaddrinfo(name.c_str(), SERVER_PORT, &hints, &servinfo)) != 0){
-        cerr << "client: getaddrinfo " << gai_strerror(status) << "\n";
+        cerr << "Client: getaddrinfo " << gai_strerror(status) << "\n";
         exit(1);
     }
 
     addrinfo *p = servinfo;
     for (;p != NULL; p = p->ai_next){
-        if ((this->sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1){
+        this->sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
+        if (this->sockfd == INVALID_SOCKET){
             cerr << "Client: socket\n";
             continue;
         }
-        if (connect(this->sockfd, p->ai_addr, p->ai_addrlen) == -1){
+        int status = connect(this->sockfd, p->ai_addr, p->ai_addrlen);
+        if (status == SOCKET_ERROR){
             cerr << "Client: connect\n";
+            closesocket(this->sockfd);
             continue;
         }
         break;
@@ -78,6 +82,7 @@ Client::Client(){
         cerr << "Client: fail to connect\n";
         exit(1);
     }
+    cout << "Connected to server.\n";
 }
 
 Client::~Client(){
@@ -98,29 +103,37 @@ int Client::discover(vector<string> &servers){
     hints.ai_socktype = SOCK_DGRAM;
     hints.ai_flags = AI_PASSIVE;
 
-    if ((status = getaddrinfo(NULL, CLIENT_PORT, &hints, &addr)) != 0){
+    status = getaddrinfo(NULL, CLIENT_PORT, &hints, &addr);
+    if (status != 0){
         cerr << "Client: getaddrinfo: " << gai_strerror(status) << "\n";
         return -1;
     }
 
     addrinfo *p = addr;
     for (;p != NULL; p = p->ai_next){
-        if ((disfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1){
+        disfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
+        if (disfd == INVALID_SOCKET){
             cerr << "Client: socket\n";
             continue;
         }
-        if (setsockopt(disfd, SOL_SOCKET, SO_BROADCAST, (char*)&yes, sizeof(yes)) == -1){
+
+        int status = setsockopt(disfd, SOL_SOCKET, SO_BROADCAST, (char*)&yes, sizeof(yes));
+        if (status == SOCKET_ERROR){
             cerr << "Client: setsockopt\n";
             freeaddrinfo(addr);
             return -1;
         }
-        if (setsockopt(disfd, SOL_SOCKET, SO_REUSEADDR, (char*)&yes, sizeof(yes)) == -1){
+
+        status = setsockopt(disfd, SOL_SOCKET, SO_REUSEADDR, (char*)&yes, sizeof(yes));
+        if (status == SOCKET_ERROR){
             cerr << "Client: setsockopt\n";
             freeaddrinfo(addr);
+            closesocket(disfd);
             return -1;
         }
-        if (bind(disfd, p->ai_addr, p->ai_addrlen) == -1){
-            perror("client: bind");
+
+        status = bind(disfd, p->ai_addr, p->ai_addrlen);
+        if (status == SOCKET_ERROR){
             cerr << "Client: bind\n";
             closesocket(disfd);
             continue;
@@ -129,7 +142,7 @@ int Client::discover(vector<string> &servers){
     }
 
     if (p == NULL){
-        cerr << "Client: fail to bind socket\n";
+        cerr << "Client: Fail to bind socket\n";
         freeaddrinfo(addr);
         return -1;
     }
@@ -138,15 +151,16 @@ int Client::discover(vector<string> &servers){
     cout << ntohs(((sockaddr_in *)p->ai_addr)->sin_port) << "\n";
 
     freeaddrinfo(addr);
-    if ((status = getaddrinfo("255.255.255.255", SERVER_PORT, &hints, &addr)) != 0){
-        cerr << "client: getaddrinfo: " << gai_strerror(status) << "\n";
+    status = getaddrinfo("255.255.255.255", SERVER_PORT, &hints, &addr);
+    if (status != 0){
+        cerr << "Client: getaddrinfo: " << gai_strerror(status) << "\n";
         return -1;
     }
     p = addr;
     cout << "Broadcast discover message to " << getIpStr(p->ai_addr) << "::"; 
     cout << ntohs(((sockaddr_in *)p->ai_addr)->sin_port) << "\n";
     if (p == NULL){
-        cerr << "client: broadcast fail\n";
+        cerr << "Client: broadcast fail\n";
         freeaddrinfo(addr);
         return -1;
     }
@@ -171,9 +185,11 @@ int Client::discover(vector<string> &servers){
         }
         
         Response buffer;
-        recvfromResponse(disfd, buffer, 0, (sockaddr*)&serverAddr, &addrlen);
+        int retCode = recvfromResponse(disfd, buffer, 0, (sockaddr*)&serverAddr, &addrlen);
+        if(retCode == -1)
+            continue;
         if (buffer.type() == DISCOVER_RESPONSE)
-            servers.push_back(getIpStr((sockaddr *)&serverAddr));
+            servers.push_back(getIpStr((sockaddr*) &serverAddr));
     }
 
     closesocket(disfd);
@@ -193,25 +209,37 @@ int Client::stopApp(const char *appName){
 }
 
 int Client::listProcesss(){
-    const char* request = "LISTPROCESSES";
-    int iResult = send(sockfd, request, strlen(request), 0);
-    if (iResult == SOCKET_ERROR) {
+    int status;
+    addrinfo* addr, hints;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = AI_PASSIVE;
+
+    if ((status = getaddrinfo("255.255.255.255", SERVER_PORT, &hints, &addr)) != 0){
+        cerr << "Client: getaddrinfo: " << gai_strerror(status) << "\n";
+        return -1;
+    }
+    addrinfo* p = addr;
+    Request msg(LIST_PROCESS_REQUEST, 0, NULL);
+    status = sendtoRequest(this->sockfd, msg, 0, p->ai_addr, p->ai_addrlen); // ---------
+    if (status == SOCKET_ERROR) {
         cerr << "Send failed: " << WSAGetLastError() << '\n';
         return -1;
     }
 
     // Receive the response from the server
     char recvbuf[512];
-    iResult = recv(sockfd, recvbuf, sizeof(recvbuf), 0);
-    if (iResult > 0) {
+    status = recv(sockfd, recvbuf, sizeof(recvbuf), 0);
+    if (status > 0) {
         // Print the process list to the console
         cout << "Running processes:\n";
-        printf("%.*s", iResult, recvbuf);
-        while (iResult = recv(sockfd, recvbuf, sizeof(recvbuf), 0)) {
-            printf("%.*s", iResult, recvbuf);
+        printf("%.*s", status, recvbuf);
+        while (status = recv(sockfd, recvbuf, sizeof(recvbuf), 0)) {
+            printf("%.*s", status, recvbuf);
         }
     } 
-    else if (iResult == 0) {
+    else if (status == 0) {
         // Server closed connection
         cout << "Server disconnected\n";
     }

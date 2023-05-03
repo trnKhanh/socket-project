@@ -17,3 +17,12 @@ uint64_t my_ntohll(uint64_t value){
         ptr_result[i] = ptr_value[7 - i];
     return result;
 }
+
+void itos(char* res, int n){
+    int i = 0;
+    while(n){
+        res[i++] = char(n % 10 + '0');
+        n /= 10;
+    }
+    res[i] = '\0';
+}
