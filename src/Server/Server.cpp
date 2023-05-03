@@ -1,8 +1,6 @@
 #include "Server.h"
-#include <iostream>
 #include <string.h> 
 #include <sys/types.h> 
-#include <vector>
 #include <signal.h>
 #include <string>
 #include <psapi.h>
@@ -234,10 +232,10 @@ void Server::start(){
                         _pclose(fp);
                     }
                     else if(req.type() == START_APP_REQUEST){
-                        this->startApp("");
+                        this->startApp("", pfd.fd);
                     }
                     else if(req.type() == STOP_APP_REQUEST){
-                        this->stopApp("");
+                        this->stopApp("", pfd.fd);
                     }
                     else if (req.type() == DISCONNECT_REQUEST)
                         break;   
@@ -252,11 +250,11 @@ void Server::start(){
     } 
 }
 
-int Server::listApp(WSAPOLLFD& fd){
+int Server::listApp(SOCKET& fd){
     return 0;
 }
 
-int Server::startApp(const char* appName, WSAPOLLFD& fd){
+int Server::startApp(const char* appName, SOCKET& fd){
     // The name of the application to retrieve information for
 
     // Get the size of the buffer required to store the application information
@@ -325,7 +323,7 @@ int Server::startApp(const char* appName, WSAPOLLFD& fd){
     return 0;
 }
 
-int Server::stopApp(const char* appName, WSAPOLLFD& fd){
+int Server::stopApp(const char* appName, SOCKET& fd){
     char* processName = (char*)malloc(strlen(appName) + 5);
     strcpy(processName, appName);
     strcat(processName, ".exe");
@@ -352,19 +350,19 @@ int Server::stopApp(const char* appName, WSAPOLLFD& fd){
     return 0;
 }
 
-int Server::listProcess(WSAPOLLFD& fd){
+int Server::listProcess(SOCKET& fd){
     return 0;
 }
 
-int Server::screenShot(WSAPOLLFD& fd){
+int Server::screenShot(SOCKET& fd){
     return 0;
 }
 
-int Server::keyLog(WSAPOLLFD& fd){
+int Server::keyLog(SOCKET& fd){
     return 0;
 }
     
-int Server::dirTree(WSAPOLLFD& fd){
+int Server::dirTree(SOCKET& fd){
     return 0;
 }
 
