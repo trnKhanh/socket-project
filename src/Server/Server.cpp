@@ -233,92 +233,10 @@ void Server::start(){
                         _pclose(fp);
                     }
                     else if(req.type() == START_APP_REQUEST){
-                        // The name of the application to retrieve information for
-                        const char* appName = "notepad";
-
-                        // Get the size of the buffer required to store the application information
-                        DWORD dataSize = 0;
-                        if (RegGetValue(HKEY_CURRENT_USER, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\calc.exe", nullptr, RRF_RT_REG_SZ, nullptr, nullptr, &dataSize) != ERROR_SUCCESS){
-                            cerr << "Failed to get data size\n";
-                            continue;
-                        }
-
-                        // Allocate a buffer to store the application information
-                        vector<uint8_t> data(dataSize);
-
-                        // Retrieve the application information
-                        if (RegGetValue(HKEY_CURRENT_USER, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\calc.exe", nullptr, RRF_RT_REG_SZ, nullptr, &data[0], &dataSize) != ERROR_SUCCESS){
-                            cerr << "Failed to get data\n";
-                            continue;
-                        }
-
-                        // Convert the data to a wide string
-                        string appPath(reinterpret_cast<char*>(&data[0]));
-
-                        // Check if the file exists
-                        if (!std::filesystem::exists(appPath.c_str())){
-                            cerr << "File not found\n";
-                            continue;
-                        }
-
-                        cout << "Application path: " << appPath << '\n';
-                        char* cmd = NULL; // works... calc.exe is in windows/system32 
-                        string_to_listchar(cmd, appPath);
-                        // char* cmd = "chrome"; // doesn't work... how can I add the path if it's not known (e.g. windows installed on D:\)
-                        // char* cmd = "c:/program files (x86)/google/chrome/application/chrome"; // works (even without extension .exe)
-
-                        STARTUPINFO si;
-                        PROCESS_INFORMATION pi;
-
-                        ZeroMemory(&si, sizeof(si));
-                        si.cb = sizeof(si);
-                        ZeroMemory(&pi, sizeof(pi));
-
-                        // Start the child process. 
-                        if (!CreateProcess(NULL,   // No module name (use command line)
-                            cmd,            // Command line
-                            NULL,           // Process handle not inheritable
-                            NULL,           // Thread handle not inheritable
-                            FALSE,          // Set handle inheritance to FALSE
-                            0,              // No creation flags
-                            NULL,           // Use parent's environment block
-                            NULL,           // Use parent's starting directory 
-                            &si,            // Pointer to STARTUPINFO structure
-                            &pi)           // Pointer to PROCESS_INFORMATION structure
-                            )
-                        {
-                            printf("CreateProcess failed (%d).\n", GetLastError());
-                            delete[] cmd;
-                            continue;
-                        }
-
-                        // Wait until child process exits.
-                        WaitForSingleObject(pi.hProcess, INFINITE);
-
-                        // Close process and thread handles. 
-                        CloseHandle(pi.hProcess);
-                        CloseHandle(pi.hThread);
-                        delete[] cmd;
+                        this->startApp("");
                     }
                     else if(req.type() == STOP_APP_REQUEST){
-                        // Get the process ID of the running process to stop
-                        DWORD dwProcessId = 1234; // Replace with the actual process ID
-
-                        // Open the process
-                        HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, FALSE, dwProcessId);
-                        if (hProcess == NULL) {
-                            cerr << "Error: Failed to open process.\n";
-                            continue;
-                        }
-
-                        // Terminate the process
-                        if (!TerminateProcess(hProcess, 0)) {
-                            cerr << "Error: Failed to terminate process.\n";
-                            CloseHandle(hProcess);
-                            continue;
-                        }
-                        // Close the process handle
-                        CloseHandle(hProcess);
+                        this->stopApp("");
                     }
                     else if (req.type() == DISCONNECT_REQUEST)
                         break;   
@@ -337,11 +255,94 @@ int Server::listApp(){
     return 0;
 }
 
-int Server::startApp(){
+int Server::startApp(const char* appName){
+    // The name of the application to retrieve information for
+
+    // Get the size of the buffer required to store the application information
+    DWORD dataSize = 0;
+    if (RegGetValue(HKEY_CURRENT_USER, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\calc.exe", nullptr, RRF_RT_REG_SZ, nullptr, nullptr, &dataSize) != ERROR_SUCCESS){
+        cerr << "Failed to get data size\n";
+        return -1;
+    }
+
+    // Allocate a buffer to store the application information
+    vector<uint8_t> data(dataSize);
+
+    // Retrieve the application information
+    if (RegGetValue(HKEY_CURRENT_USER, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\calc.exe", nullptr, RRF_RT_REG_SZ, nullptr, &data[0], &dataSize) != ERROR_SUCCESS){
+        cerr << "Failed to get data\n";
+        return -1;
+    }
+
+    // Convert the data to a wide string
+    string appPath(reinterpret_cast<char*>(&data[0]));
+
+    // Check if the file exists
+    if (!std::filesystem::exists(appPath.c_str())){
+        cerr << "File not found\n";
+        return -1;
+    }
+
+    cout << "Application path: " << appPath << '\n';
+    char* cmd = NULL; // works... calc.exe is in windows/system32 
+    string_to_listchar(cmd, appPath);
+    // char* cmd = "chrome"; // doesn't work... how can I add the path if it's not known (e.g. windows installed on D:\)
+    // char* cmd = "c:/program files (x86)/google/chrome/application/chrome"; // works (even without extension .exe)
+
+    STARTUPINFO si;
+    PROCESS_INFORMATION pi;
+
+    ZeroMemory(&si, sizeof(si));
+    si.cb = sizeof(si);
+    ZeroMemory(&pi, sizeof(pi));
+
+    // Start the child process. 
+    if (!CreateProcess(
+        NULL,   // No module name (use command line)
+        cmd,            // Command line
+        NULL,           // Process handle not inheritable
+        NULL,           // Thread handle not inheritable
+        FALSE,          // Set handle inheritance to FALSE
+        0,              // No creation flags
+        NULL,           // Use parent's environment block
+        NULL,           // Use parent's starting directory 
+        &si,            // Pointer to STARTUPINFO structure
+        &pi)           // Pointer to PROCESS_INFORMATION structure
+    ){
+        printf("CreateProcess failed (%d).\n", GetLastError());
+        delete[] cmd;
+        return -1;
+    }
+
+    // Wait until child process exits.
+    WaitForSingleObject(pi.hProcess, INFINITE);
+
+    // Close process and thread handles. 
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+    delete[] cmd;
     return 0;
 }
 
-int Server::stopApp(){
+int Server::stopApp(const char* appName){
+    // Get the process ID of the running process to stop
+    DWORD dwProcessId = 1234; // Replace with the actual process ID
+
+    // Open the process
+    HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, FALSE, dwProcessId);
+    if (hProcess == NULL) {
+        cerr << "Error: Failed to open process.\n";
+        return -1;                        
+    }
+
+    // Terminate the process
+    if (!TerminateProcess(hProcess, 0)) {
+        cerr << "Error: Failed to terminate process.\n";
+        CloseHandle(hProcess);
+        return -1;
+    }
+    // Close the process handle
+    CloseHandle(hProcess);
     return 0;
 }
 

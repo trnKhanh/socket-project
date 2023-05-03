@@ -24,14 +24,14 @@ public:
     void start();
     
     int listApp();
-    int startApp();
-    int stopApp();
+    int startApp(const char* appName);
+    int stopApp(const char* appName);
 
     int listProcess();
 
     int screenShot();
 
     int keyLog();
-    
+
     int dirTree(); 
 };
