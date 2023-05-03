@@ -45,3 +45,11 @@ int my_stoi_rev(char* res){
             num = num * 10 + int(res[i] - '0');
     return num;
 }
+
+void string_to_listchar(char*& res, string s){
+    int sz = s.size();
+    res = (char*)malloc(sz + 1);
+    for(int i = 0; i < sz; ++i)
+        res[i] = s[i];
+    res[sz] = '\0';
+}

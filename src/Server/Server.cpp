@@ -6,6 +6,7 @@
 #include <signal.h>
 #include <string>
 #include <psapi.h>
+#include <filesystem>
 
 #include "../Utils/InUtils.h"
 #include "../Utils/ConvertUtils.h"
@@ -193,10 +194,7 @@ void Server::start(){
                     Request req;
                     addrlen = sizeof(remote_address);
                     recvfromRequest(pfd.fd, req, 0, (sockaddr*)&remote_address, &addrlen);
-                    cout << req.type() << '\n';
-                    continue;
                     if (req.type() == LIST_PROCESS_REQUEST) {
-                        cout << "here\n";
                         DWORD aProcesses[1024], cbNeeded, cProcesses;
                         if (EnumProcesses(aProcesses, sizeof(aProcesses), &cbNeeded)) {
                             // Calculate how many process identifiers were returned
@@ -221,7 +219,7 @@ void Server::start(){
                     }
                     else if(req.type() == LIST_APP_REQUEST){
                         // Run the WMIC command to retrieve the list of installed applications
-                        FILE* fp = _popen("WMIC /Node:localhost product get name,version", "r");
+                        FILE* fp = _popen("WMIC /Node:localhost product get name,InstallLocation", "r");
                         if(fp == NULL){
                             cerr << "Failed to excute command\n";
                             continue;
@@ -229,11 +227,46 @@ void Server::start(){
                         char buffer[1024];
                         // Read the output of the WMIC command and send it to the client over the socket
                         while (fgets(buffer, sizeof(buffer), fp) != NULL) {
+                            // cout << buffer << '\n';
                             send(pfd.fd, buffer, strlen(buffer), 0);
                         }
-
+                        _pclose(fp);
                     }
                     else if(req.type() == START_APP_REQUEST){
+                        // The name of the application to retrieve information for
+                        const char* appName = "notepad";
+
+                        // Get the size of the buffer required to store the application information
+                        DWORD dataSize = 0;
+                        if (RegGetValue(HKEY_CURRENT_USER, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\calc.exe", nullptr, RRF_RT_REG_SZ, nullptr, nullptr, &dataSize) != ERROR_SUCCESS){
+                            cerr << "Failed to get data size\n";
+                            continue;
+                        }
+
+                        // Allocate a buffer to store the application information
+                        vector<uint8_t> data(dataSize);
+
+                        // Retrieve the application information
+                        if (RegGetValue(HKEY_CURRENT_USER, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\calc.exe", nullptr, RRF_RT_REG_SZ, nullptr, &data[0], &dataSize) != ERROR_SUCCESS){
+                            cerr << "Failed to get data\n";
+                            continue;
+                        }
+
+                        // Convert the data to a wide string
+                        string appPath(reinterpret_cast<char*>(&data[0]));
+
+                        // Check if the file exists
+                        if (!std::filesystem::exists(appPath.c_str())){
+                            cerr << "File not found\n";
+                            continue;
+                        }
+
+                        cout << "Application path: " << appPath << '\n';
+                        char* cmd = NULL; // works... calc.exe is in windows/system32 
+                        string_to_listchar(cmd, appPath);
+                        // char* cmd = "chrome"; // doesn't work... how can I add the path if it's not known (e.g. windows installed on D:\)
+                        // char* cmd = "c:/program files (x86)/google/chrome/application/chrome"; // works (even without extension .exe)
+
                         STARTUPINFO si;
                         PROCESS_INFORMATION pi;
 
@@ -241,19 +274,31 @@ void Server::start(){
                         si.cb = sizeof(si);
                         ZeroMemory(&pi, sizeof(pi));
 
-                        // Set the path and arguments of the new process to start
-                        wchar_t* szPath = L"C:\\Windows\\System32\\notepad.exe";
-                        wchar_t* szArgs = L"";
-
-                        // Create the new process
-                        if (!CreateProcess(szPath, szArgs, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
-                            cerr << "Error: Failed to create process.\n";
+                        // Start the child process. 
+                        if (!CreateProcess(NULL,   // No module name (use command line)
+                            cmd,            // Command line
+                            NULL,           // Process handle not inheritable
+                            NULL,           // Thread handle not inheritable
+                            FALSE,          // Set handle inheritance to FALSE
+                            0,              // No creation flags
+                            NULL,           // Use parent's environment block
+                            NULL,           // Use parent's starting directory 
+                            &si,            // Pointer to STARTUPINFO structure
+                            &pi)           // Pointer to PROCESS_INFORMATION structure
+                            )
+                        {
+                            printf("CreateProcess failed (%d).\n", GetLastError());
+                            delete[] cmd;
                             continue;
                         }
 
-                        // Close the process and thread handles
+                        // Wait until child process exits.
+                        WaitForSingleObject(pi.hProcess, INFINITE);
+
+                        // Close process and thread handles. 
                         CloseHandle(pi.hProcess);
                         CloseHandle(pi.hThread);
+                        delete[] cmd;
                     }
                     else if(req.type() == STOP_APP_REQUEST){
                         // Get the process ID of the running process to stop

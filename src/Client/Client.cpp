@@ -38,7 +38,6 @@ Client::Client(){
 
     vector <string> servers;
     retCode = this->discover(servers);
-    cout << "ok" << std::endl;
     
     if (retCode == -1) 
         exit(1);
@@ -174,7 +173,7 @@ int Client::discover(vector<string> &servers){
     pfds[0].events = POLLIN;
     pfds[0].fd = disfd;
     while(true){
-        int rv = WSAPoll(pfds, 1, 5000);
+        int rv = WSAPoll(pfds, 1, 1000);
         if (rv == -1){
             cerr << "poll\n";
             closesocket(disfd); 
@@ -218,11 +217,13 @@ int Client::listApp(){
     }
 
     // Receive the response from the server
-    char recvbuf[65536];
+    char recvbuf[1024];
     status = recv(this->sockfd, recvbuf, sizeof(recvbuf), 0);
     if (status > 0) {
         cout << "List of installed applications on server:\n";
-        cout << recvbuf << '\n';
+        cout << recvbuf;
+        while((status = recv(this->sockfd, recvbuf, sizeof(recvbuf), 0)) != 0)
+            printf("%.*s", status, recvbuf);
     }
     else if (status == 0) {
         cout << "Connection closed\n";

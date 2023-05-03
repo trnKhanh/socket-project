@@ -3,6 +3,7 @@
 int main(){
     Client* c = new Client();
     // c->listProcesss();
-    c->listApp();
+    // c->listApp();
+    c->startApp("");
     delete c;
 }
