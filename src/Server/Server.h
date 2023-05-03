@@ -22,4 +22,16 @@ public:
     ~Server();
 
     void start();
+    
+    int listApp();
+    int startApp();
+    int stopApp();
+
+    int listProcess();
+
+    int screenShot();
+
+    int keyLog();
+    
+    int dirTree(); 
 };

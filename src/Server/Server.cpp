@@ -332,3 +332,31 @@ void Server::start(){
         }
     } 
 }
+
+int Server::listApp(){
+    return 0;
+}
+
+int Server::startApp(){
+    return 0;
+}
+
+int Server::stopApp(){
+    return 0;
+}
+
+int Server::listProcess(){
+    return 0;
+}
+
+int Server::screenShot(){
+    return 0;
+}
+
+int Server::keyLog(){
+    return 0;
+}
+    
+int Server::dirTree(){
+    return 0;
+} 
