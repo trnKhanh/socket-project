@@ -7,6 +7,7 @@
 #include <string>
 #include <psapi.h>
 #include <filesystem>
+#include <tlhelp32.h>
 
 #include "../Utils/InUtils.h"
 #include "../Utils/ConvertUtils.h"
@@ -325,8 +326,13 @@ int Server::startApp(const char* appName, WSAPOLLFD& fd){
 }
 
 int Server::stopApp(const char* appName, WSAPOLLFD& fd){
+    char* processName = (char*)malloc(strlen(appName) + 5);
+    strcpy(processName, appName);
+    strcat(processName, ".exe");
+
+
     // Get the process ID of the running process to stop
-    DWORD dwProcessId = 1234; // Replace with the actual process ID
+    DWORD dwProcessId = GetProcessIdByName(processName); // Replace with the actual process ID
 
     // Open the process
     HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, FALSE, dwProcessId);
@@ -360,4 +366,24 @@ int Server::keyLog(WSAPOLLFD& fd){
     
 int Server::dirTree(WSAPOLLFD& fd){
     return 0;
-} 
+}
+
+// Function to get the PID of a process given its name
+DWORD GetProcessIdByName(const char* processName){
+    HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    PROCESSENTRY32W entry;
+    entry.dwSize = sizeof(entry);
+
+    if (!Process32FirstW(snapshot, &entry))
+        return 0;
+
+    do {
+        if (strcmp((char*)entry.szExeFile, processName) == 0) {
+            CloseHandle(snapshot);
+            return entry.th32ProcessID;
+        }
+    } while (Process32NextW(snapshot, &entry));
+
+    CloseHandle(snapshot);
+    return 0;
+}

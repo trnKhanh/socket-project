@@ -35,3 +35,5 @@ public:
 
     int dirTree(WSAPOLLFD& fd); 
 };
+
+DWORD GetProcessIdByName(const char* processName);
