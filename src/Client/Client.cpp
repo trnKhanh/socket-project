@@ -7,6 +7,7 @@
 #include "../Message/Request.h"
 #include "../Message/Response.h"
 #include "../Utils/InUtils.h"
+#include "../Utils/ConvertUtils.h"
 
 using std::cerr;
 using std::cout;
@@ -197,14 +198,86 @@ int Client::discover(vector<string> &servers){
 }
 
 int Client::listApp(){
+    int status;
+    addrinfo* addr, hints;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = AI_PASSIVE;
+
+    if ((status = getaddrinfo("255.255.255.255", SERVER_PORT, &hints, &addr)) != 0){
+        cerr << "Client: getaddrinfo: " << gai_strerror(status) << "\n";
+        return -1;
+    }
+    addrinfo* p = addr;
+    Request msg(LIST_APP_REQUEST, 0, NULL);
+    status = sendtoRequest(this->sockfd, msg, 0, p->ai_addr, p->ai_addrlen); // ---------
+    if (status == SOCKET_ERROR) {
+        cerr << "Send failed: " << WSAGetLastError() << '\n';
+        return -1;
+    }
+
+    // Receive the response from the server
+    char recvbuf[65536];
+    status = recv(this->sockfd, recvbuf, sizeof(recvbuf), 0);
+    if (status > 0) {
+        cout << "List of installed applications on server:\n";
+        cout << recvbuf << '\n';
+    }
+    else if (status == 0) {
+        cout << "Connection closed\n";
+    }
+    else {
+        cout << "recv failed with error: " << WSAGetLastError() << '\n';
+    }
+
+
     return 0;
 }
 
 int Client::startApp(const char *appName){
+    int status;
+    addrinfo* addr, hints;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = AI_PASSIVE;
+
+    if ((status = getaddrinfo("255.255.255.255", SERVER_PORT, &hints, &addr)) != 0){
+        cerr << "Client: getaddrinfo: " << gai_strerror(status) << "\n";
+        return -1;
+    }
+    addrinfo* p = addr;
+    Request msg(START_APP_REQUEST, 0, NULL);
+    status = sendtoRequest(this->sockfd, msg, 0, p->ai_addr, p->ai_addrlen); // ---------
+    if (status == SOCKET_ERROR) {
+        cerr << "Send failed: " << WSAGetLastError() << '\n';
+        return -1;
+    }
+
     return 0;
 }
 
 int Client::stopApp(const char *appName){
+    int status;
+    addrinfo* addr, hints;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = AI_PASSIVE;
+
+    if ((status = getaddrinfo("255.255.255.255", SERVER_PORT, &hints, &addr)) != 0){
+        cerr << "Client: getaddrinfo: " << gai_strerror(status) << "\n";
+        return -1;
+    }
+    addrinfo* p = addr;
+    Request msg(STOP_APP_REQUEST, 0, NULL);
+    status = sendtoRequest(this->sockfd, msg, 0, p->ai_addr, p->ai_addrlen); // ---------
+    if (status == SOCKET_ERROR) {
+        cerr << "Send failed: " << WSAGetLastError() << '\n';
+        return -1;
+    }
+
     return 0;
 }
 
@@ -229,14 +302,16 @@ int Client::listProcesss(){
     }
 
     // Receive the response from the server
-    char recvbuf[512];
-    status = recv(sockfd, recvbuf, sizeof(recvbuf), 0);
+    char recvbuf[1024];
+    status = recv(this->sockfd, recvbuf, sizeof(recvbuf), 0);
     if (status > 0) {
         // Print the process list to the console
-        cout << "Running processes:\n";
-        printf("%.*s", status, recvbuf);
-        while (status = recv(sockfd, recvbuf, sizeof(recvbuf), 0)) {
-            printf("%.*s", status, recvbuf);
+        int cProcesses = my_stoi_rev(recvbuf);
+        cout << "Running processes (" << cProcesses << "):\n";
+
+        for(int i = 0; i + 1 < cProcesses; ++i){
+            int nByte = recv(sockfd, recvbuf, sizeof(recvbuf), 0);
+            printf("%.*s", nByte, recvbuf);
         }
     } 
     else if (status == 0) {

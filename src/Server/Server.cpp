@@ -9,6 +9,7 @@
 
 #include "../Utils/InUtils.h"
 #include "../Utils/ConvertUtils.h"
+#include "../Utils/MsgTransport.h"
 #include "../Message/Request.h"
 #include "../Message/Response.h"
 
@@ -189,9 +190,13 @@ void Server::start(){
                     
                 } 
                 else{
-                    int nbyte = recv(pfd.fd, buffer, sizeof(buffer), 0);
+                    Request req;
+                    addrlen = sizeof(remote_address);
+                    recvfromRequest(pfd.fd, req, 0, (sockaddr*)&remote_address, &addrlen);
+                    cout << req.type() << '\n';
                     continue;
-                    if (strncmp(buffer, "LISTPROCESSES", 13) == 0) {
+                    if (req.type() == LIST_PROCESS_REQUEST) {
+                        cout << "here\n";
                         DWORD aProcesses[1024], cbNeeded, cProcesses;
                         if (EnumProcesses(aProcesses, sizeof(aProcesses), &cbNeeded)) {
                             // Calculate how many process identifiers were returned
@@ -200,7 +205,7 @@ void Server::start(){
                             char numProc[20];
                             my_itos(numProc, cProcesses);
                             cout << cProcesses << '\n';
-                            //send(clientSock, numProc, strlen(numProc), 0);
+                            send(pfd.fd, numProc, strlen(numProc), 0);
                             for (DWORD i = 0; i < cProcesses; i++) {
                                 HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, aProcesses[i]);
                                 if (hProcess != NULL) {
@@ -214,7 +219,63 @@ void Server::start(){
                             }
                         }
                     }
-                    else if (strncmp(buffer, "DISCONNECT", 10) == 0)
+                    else if(req.type() == LIST_APP_REQUEST){
+                        // Run the WMIC command to retrieve the list of installed applications
+                        FILE* fp = _popen("WMIC /Node:localhost product get name,version", "r");
+                        if(fp == NULL){
+                            cerr << "Failed to excute command\n";
+                            continue;
+                        }
+                        char buffer[1024];
+                        // Read the output of the WMIC command and send it to the client over the socket
+                        while (fgets(buffer, sizeof(buffer), fp) != NULL) {
+                            send(pfd.fd, buffer, strlen(buffer), 0);
+                        }
+
+                    }
+                    else if(req.type() == START_APP_REQUEST){
+                        STARTUPINFO si;
+                        PROCESS_INFORMATION pi;
+
+                        ZeroMemory(&si, sizeof(si));
+                        si.cb = sizeof(si);
+                        ZeroMemory(&pi, sizeof(pi));
+
+                        // Set the path and arguments of the new process to start
+                        wchar_t* szPath = L"C:\\Windows\\System32\\notepad.exe";
+                        wchar_t* szArgs = L"";
+
+                        // Create the new process
+                        if (!CreateProcess(szPath, szArgs, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
+                            cerr << "Error: Failed to create process.\n";
+                            continue;
+                        }
+
+                        // Close the process and thread handles
+                        CloseHandle(pi.hProcess);
+                        CloseHandle(pi.hThread);
+                    }
+                    else if(req.type() == STOP_APP_REQUEST){
+                        // Get the process ID of the running process to stop
+                        DWORD dwProcessId = 1234; // Replace with the actual process ID
+
+                        // Open the process
+                        HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, FALSE, dwProcessId);
+                        if (hProcess == NULL) {
+                            cerr << "Error: Failed to open process.\n";
+                            continue;
+                        }
+
+                        // Terminate the process
+                        if (!TerminateProcess(hProcess, 0)) {
+                            cerr << "Error: Failed to terminate process.\n";
+                            CloseHandle(hProcess);
+                            continue;
+                        }
+                        // Close the process handle
+                        CloseHandle(hProcess);
+                    }
+                    else if (req.type() == DISCONNECT_REQUEST)
                         break;   
                     else {
                         // Unknown request

@@ -1,4 +1,5 @@
 #include "ConvertUtils.h"
+#include <cstring>
 
 uint64_t my_htonll(uint64_t value){
     uint64_t result;
@@ -25,4 +26,22 @@ void my_itos(char* res, int n){
         n /= 10;
     }
     res[i] = '\0';
+}
+
+int my_stoi(char* res){
+    int num = 0;
+    int sz = strlen(res);
+    for(int i = 0; i < sz; ++i)
+        if(res[i] >= '0' && res[i] <= '9')
+            num = num * 10 + int(res[i] - '0');
+    return num;
+}
+
+int my_stoi_rev(char* res){
+    int num = 0;
+    int sz = strlen(res);
+    for(int i = sz; i >= 0; --i)
+        if(res[i] >= '0' && res[i] <= '9')
+            num = num * 10 + int(res[i] - '0');
+    return num;
 }

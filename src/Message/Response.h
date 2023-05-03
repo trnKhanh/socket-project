@@ -5,9 +5,10 @@
 // Structure Macro message
 
 #define DISCOVER_RESPONSE (1 << 7)
+#define DISCONNECT_RESPONSE (1 << 7) | (1 << 0)
 
 #define LIST_APP_RESPONSE (1 << 3) | (1 << 0)
-#define STOP_APP_RESPONSE (1 << 3) | (1 << 1)
+#define START_APP_RESPONSE (1 << 3) | (1 << 1)
 #define STOP_APP_RESPONSE (1 << 3) | (1 << 1) | (1 << 0)
 
 #define LIST_PROCESS_RESPONSE (1 << 4) | (1 << 0)
