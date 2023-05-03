@@ -23,15 +23,15 @@ public:
 
     void start();
     
-    int listApp();
-    int startApp(const char* appName);
-    int stopApp(const char* appName);
+    int listApp(WSAPOLLFD& fd);
+    int startApp(const char* appName, WSAPOLLFD& fd);
+    int stopApp(const char* appName, WSAPOLLFD& fd);
 
-    int listProcess();
+    int listProcess(WSAPOLLFD& fd);
 
-    int screenShot();
+    int screenShot(WSAPOLLFD& fd);
 
-    int keyLog();
+    int keyLog(WSAPOLLFD& fd);
 
-    int dirTree(); 
+    int dirTree(WSAPOLLFD& fd); 
 };

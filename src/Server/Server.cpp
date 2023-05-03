@@ -251,11 +251,11 @@ void Server::start(){
     } 
 }
 
-int Server::listApp(){
+int Server::listApp(WSAPOLLFD& fd){
     return 0;
 }
 
-int Server::startApp(const char* appName){
+int Server::startApp(const char* appName, WSAPOLLFD& fd){
     // The name of the application to retrieve information for
 
     // Get the size of the buffer required to store the application information
@@ -324,7 +324,7 @@ int Server::startApp(const char* appName){
     return 0;
 }
 
-int Server::stopApp(const char* appName){
+int Server::stopApp(const char* appName, WSAPOLLFD& fd){
     // Get the process ID of the running process to stop
     DWORD dwProcessId = 1234; // Replace with the actual process ID
 
@@ -346,18 +346,18 @@ int Server::stopApp(const char* appName){
     return 0;
 }
 
-int Server::listProcess(){
+int Server::listProcess(WSAPOLLFD& fd){
     return 0;
 }
 
-int Server::screenShot(){
+int Server::screenShot(WSAPOLLFD& fd){
     return 0;
 }
 
-int Server::keyLog(){
+int Server::keyLog(WSAPOLLFD& fd){
     return 0;
 }
     
-int Server::dirTree(){
+int Server::dirTree(WSAPOLLFD& fd){
     return 0;
 } 
