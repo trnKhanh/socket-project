@@ -1,11 +1,9 @@
-#include "function_unix/ListProcesses.h"
-#include <algorithm>
-
+#include "server/Server.h"
+#include "GlobalConstant.h"
+#include <iostream>
 int main(int argc, char *argv[])
 {
-    vector<Process> processes;
-    listProcesses(processes);
-    sort(processes.begin(), processes.end());
-    for (Process p: processes)
-        cout << p << "\n";
+    Server s;
+    // std::cout << (char*)s.listProcesss().data() << std::endl;
+    s.start();
 }
