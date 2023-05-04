@@ -1,8 +1,8 @@
 #pragma once
 #include "Objects/Process.h"
 #include <vector>
+#include <string>
 
-using namespace std;
-
-void listProcesses(vector<Process> &Processes);
+int listProcesses(std::vector<Process> &Processes);
+int listProcessesStr(std::string &res);
 

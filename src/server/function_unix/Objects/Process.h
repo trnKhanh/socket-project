@@ -2,6 +2,7 @@
 #include <sys/sysctl.h>
 #include <libproc.h>
 #include <iostream>
+#include <string>
 
 class Process {
     int pid;
@@ -11,4 +12,6 @@ public:
     bool operator < (const Process &a) const;
 
     friend std::ostream& operator << (std::ostream &os, const Process &p);
+
+    std::string toString();
 };

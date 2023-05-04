@@ -1,21 +1,32 @@
 #pragma once
 #include <vector>
 #include <poll.h>
-
-#define SERVER_PORT "6910"
-#define CLIENT_PORT "6911"
+#include "../GlobalConstant.h"
+#include "../Message/Request.h"
+#include "../Message/Response.h"
 #define BACKLOG 10
-
-using namespace std;
 
 class Server {
 private:
     int listener;
     int disfd;
-    vector<pollfd> pfds;
+    std::vector<pollfd> pfds;
 public:
-    Server(const char* port);
+    Server();
     ~Server();
 
     void start();
+
+    Response listApp();  
+    Response startApp(const char *appName);
+    Response stopApp(const char *appName);
+    
+    Response listProcesss();
+
+    Response screenshot();
+
+    Response startKeylog();
+    Response stopKeylog();
+
+    Response dirTree(const char *pathName); 
 };

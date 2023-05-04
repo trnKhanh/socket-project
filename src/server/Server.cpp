@@ -12,18 +12,17 @@
 #include <signal.h>
 #include <string>
 #include "../Utils/InUtils.h"
-#include "../Message/Request.h"
-#include "../Message/Response.h"
-using namespace std;
+#include "helper.h"
 
 Server::~Server()
 {
-    cout << "closed" << "\n";
+    std::cout << "closed" << "\n";
     close(this->listener);
     close(this->disfd);
 }
-Server::Server(const char* port)
+Server::Server()
 {
+    char port[] = SERVER_PORT;
     int status;
     int yes = 1;
     addrinfo hints, *res;
@@ -34,7 +33,7 @@ Server::Server(const char* port)
 
     if ((status = getaddrinfo(NULL, port, &hints, &res)) == -1)
     {
-        cerr << "getaddrinfo: " << gai_strerror(status) << "\n";
+        std::cerr << "getaddrinfo: " << gai_strerror(status) << "\n";
         exit(1);
     }
 
@@ -59,13 +58,13 @@ Server::Server(const char* port)
         break;
     }
     
-    cout << "Server started on " << getIpStr(p->ai_addr) << "::"; 
-    cout << ntohs(((sockaddr_in *)p->ai_addr)->sin_port) << "\n";
+    std::cout << "Server started on " << getIpStr(p->ai_addr) << ":"; 
+    std::cout << ntohs(((sockaddr_in *)p->ai_addr)->sin_port) << "\n";
     
     freeaddrinfo(res);
     if (p == NULL)
     {
-        cerr << "server: fail to bind\n";
+        std::cerr << "server: fail to bind\n";
         exit(1);
     }
     if (listen(this->listener, BACKLOG) == -1)
@@ -73,7 +72,7 @@ Server::Server(const char* port)
         perror("server: listen");
         exit(1);
     }
-    this->pfds.emplace_back();
+    this->pfds.push_back(pollfd());
     this->pfds.back().fd = this->listener;
     this->pfds.back().events = POLLIN;
 
@@ -84,7 +83,7 @@ Server::Server(const char* port)
 
     if ((status = getaddrinfo(NULL, port, &hints, &res)) == -1)
     {
-        cerr << "getaddrinfo: " << gai_strerror(status) << "\n";
+        std::cerr << "getaddrinfo: " << gai_strerror(status) << "\n";
         exit(1);
     }
 
@@ -93,33 +92,33 @@ Server::Server(const char* port)
     {
         if ((this->disfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1)
         {
-            perror("server: socket");
+            perror("server discover: socket");
             continue;
         }
         if (setsockopt(this->disfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
-            perror("server: setsockopt");
+            perror("server discover: setsockopt");
             exit(1); 
         }
         if (bind(this->disfd, p->ai_addr, p->ai_addrlen) == -1)
         {
-            perror("server: bind");
+            perror("server discover: bind");
             close(this->disfd);
             continue;
         }
         break;
     }
     
-    cout << "Discover server started on " << getIpStr(p->ai_addr) << "::"; 
-    cout << ntohs(((sockaddr_in *)p->ai_addr)->sin_port) << "\n";
+    std::cout << "Discover server started on " << getIpStr(p->ai_addr) << ":"; 
+    std::cout << ntohs(((sockaddr_in *)p->ai_addr)->sin_port) << "\n";
     
     freeaddrinfo(res);
     if (p == NULL)
     {
-        cerr << "server: fail to bind\n";
+        std::cerr << "server: fail to bind\n";
         exit(1);
     }
 
-    this->pfds.emplace_back();
+    this->pfds.push_back(pollfd());
     this->pfds.back().fd = this->disfd;
     this->pfds.back().events = POLLIN;
 }
@@ -133,59 +132,142 @@ void Server::start()
     char buffer[256];
     while (1)
     {
-        int poll_count = poll(&pfds[0], pfds.size(), -1);
+        int poll_count = poll(this->pfds.data(), pfds.size(), -1);
         if (poll_count == -1)
         {
             perror("poll");
             exit(1);
         }
-        for (int i = 0; i < pfds.size(); ++i)
+        for (int i = 0; i < this->pfds.size(); ++i)
         {
-            auto pfd = pfds[i];
+            auto pfd = this->pfds[i];
             // get one ready to read
             if (pfd.revents & POLLIN)
             {
                 // listener ready to read - new connection
-                if (pfd.fd == listener)
+                if (pfd.fd == this->listener)
                 {
                     addrlen = sizeof(remote_address);
-                    newfd = accept(listener, (sockaddr *)&remote_address, &addrlen);
+                    newfd = accept(this->listener, (sockaddr *)&remote_address, &addrlen);
                     if (newfd == -1)
                     {
                         perror("accept");
                     } else
                     {
-                        pfds.emplace_back();
-                        pfds.back().fd = newfd;
-                        pfds.back().events = POLLIN;
+                        this->pfds.push_back(pollfd());
+                        this->pfds.back().fd = newfd;
+                        this->pfds.back().events = POLLIN;
 
-                        
-                        cout << "New connection from " << getIpStr((sockaddr *)&remote_address)
+                        std::cout << "New connection from " << getIpStr((sockaddr *)&remote_address)
                              << " on socket " << newfd << "\n";
                     }
                 } 
-                else if (pfd.fd == disfd) // receive discover message
+                else if (pfd.fd == this->disfd) // receive discover message
                 {  
                     Request r;
                     addrlen = sizeof(remote_address);
-                    recvfromRequest(disfd, r, 0, (sockaddr *)&remote_address, &addrlen);
-                    if (r.type() == DISCOVER_REQUEST)
+                    if (recvfromRequest(this->disfd, r, 0, (sockaddr *)&remote_address, &addrlen) == -1)
                     {
-                        cout << "Receive discover message from " << getIpStr((sockaddr *)&remote_address) << "::"; 
-                        cout << ntohs(((sockaddr_in *)&remote_address)->sin_port) << "\n";
-                        Response msg(DISCOVER_RESPONSE, OK_ERRCODE, 0, NULL);
+                        perror("discover request receive");
+                    }
+                    else if (r.type() == DISCOVER_REQUEST)
+                    {
+                        std::cout << "Receive discover message from " << getIpStr((sockaddr *)&remote_address) << ":"; 
+                        std::cout << ntohs(((sockaddr_in *)&remote_address)->sin_port) << "\n";
+                        Response msg(DISCOVER_RESPONSE, OK_CODE, 0, NULL);
                         
-                        sendtoResponse(disfd, msg, 0, (sockaddr *)&remote_address, addrlen);
+                        if (sendtoResponse(this->disfd, msg, 0, (sockaddr *)&remote_address, addrlen) == -1)
+                        {
+                            perror("send offer");
+                        }
                     }
                 } 
                 else
                 {
-                    int nbyte = recv(pfd.fd, buffer, sizeof buffer, 0);
+                    Request buffer;
+                    
+                    if (recvRequest(pfd.fd, buffer, 0) == -1)
+                    {
+                        perror("recvfromRequest");
+                    } 
+                    else
+                    {
+                        Response res;
+                        
+                        if (buffer.type() == LIST_APP_REQUEST)
+                            res = this->listApp();
+                        else if (buffer.type() == START_APP_REQUEST)
+                            res = this->startApp((char *)buffer.data());
+                        else if (buffer.type() == STOP_APP_REQUEST)
+                            res = this->stopApp((char *)buffer.data());
+                        else if (buffer.type() == LIST_PROC_REQUEST)
+                            res = this->listProcesss();
+                        else if (buffer.type() == SCREENSHOT_REQUEST)
+                            res = this->screenshot();
+                        else if (buffer.type() == START_KEYLOG_REQUEST)
+                            res = this->startKeylog();
+                        else if (buffer.type() == STOP_KEYLOG_REQUEST)
+                            res = this->stopKeylog();
+                        else if (buffer.type() == DIR_TREE_REQUEST)
+                            res = this->dirTree((char *)buffer.data());
+                        else 
+                        {
+                            std::cerr << "Invalid request received on socket " << pfd.fd << std::endl;
+                            continue;
+                        }
+                        if (sendResponse(pfd.fd, res, 0) == -1)
+                        {
+                            perror("sendResponse");
+                        }
+                    }
 
                     
                 }
             }
         }
     }
+}
+
+Response Server::listApp()
+{
+
+}
+Response Server::startApp(const char *appName)
+{
+
+}
+Response Server::stopApp(const char *appName)
+{
+
+}
+
+Response Server::listProcesss()
+{
+    std::string res;
+    int status = listProcessesStr(res);
+    uint8_t errCode;
+    if (status == -1)
+        errCode = FAIL_CODE;
+    else errCode = OK_CODE;
+
+    return Response(CMD_RESPONSE, errCode, res.size(), (void *)res.c_str());
+}
+
+Response Server::screenshot()
+{
+
+}
+
+Response Server::startKeylog()
+{
+
+}
+Response Server::stopKeylog()
+{
+
+}
+
+Response Server::dirTree(const char *pathName)
+{
     
 }
