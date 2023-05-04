@@ -128,9 +128,8 @@ void Server::start()
 
     sockaddr_storage remote_address;
     socklen_t addrlen;
-
-    char buffer[256];
-    while (1)
+    int cnt = 0;
+    while (cnt++ < 5)
     {
         int poll_count = poll(this->pfds.data(), pfds.size(), -1);
         if (poll_count == -1)
@@ -188,7 +187,9 @@ void Server::start()
                     
                     if (recvRequest(pfd.fd, buffer, 0) == -1)
                     {
-                        perror("recvfromRequest");
+                        pfds[i] = pfds.back();
+                        pfds.pop_back();
+                        std::cerr << "Connection closed\n";
                     } 
                     else
                     {
@@ -239,7 +240,7 @@ Response Server::listApp()
     }
     else errCode = OK_CODE;
 
-    return Response(CMD_RESPONSE, errCode, buffer.size(), (void *)buffer.c_str());
+    return Response(CMD_RESPONSE_STR, errCode, buffer.size() + 1, (void *)buffer.c_str());
 }
 Response Server::startApp(const char *appName)
 {
@@ -250,7 +251,7 @@ Response Server::startApp(const char *appName)
     }
     else errCode = OK_CODE;
 
-    return Response(CMD_RESPONSE, errCode, 0, NULL);
+    return Response(CMD_RESPONSE_EMPTY, errCode, 0, NULL);
 }
 Response Server::stopApp(const char *appName)
 {
@@ -261,7 +262,7 @@ Response Server::stopApp(const char *appName)
     }
     else errCode = OK_CODE;
 
-    return Response(CMD_RESPONSE, errCode, 0, NULL);
+    return Response(CMD_RESPONSE_EMPTY, errCode, 0, NULL);
 }
 
 Response Server::listProcesss()
@@ -276,7 +277,7 @@ Response Server::listProcesss()
     }
     else errCode = OK_CODE;
 
-    return Response(CMD_RESPONSE, errCode, buffer.size(), (void *)buffer.c_str());
+    return Response(CMD_RESPONSE_STR, errCode, buffer.size() + 1, (void *)buffer.c_str());
 }
 
 Response Server::screenshot()
@@ -287,20 +288,21 @@ Response Server::screenshot()
         errCode = FAIL_CODE;
     else errCode = OK_CODE;
 
-    return Response(CMD_RESPONSE, errCode, buffer.size(), buffer.data());
+    return Response(CMD_RESPONSE_PNG, errCode, buffer.size(), buffer.data());
 }
 
 Response Server::startKeylog()
 {
-
+    return Response();
 }
 Response Server::stopKeylog()
 {
-
+    return Response();
 }
 
 Response Server::dirTree(const char *pathName)
 {
+    std::cout << "Processing list directory tree rooted at " << pathName << std::endl;
     std::string buffer;
     int status = listDirTreeHelper(pathName, buffer);
     uint32_t errCode;
@@ -311,5 +313,5 @@ Response Server::dirTree(const char *pathName)
     }
     else errCode = OK_CODE;
 
-    return Response(CMD_RESPONSE, errCode, buffer.size(), (void *)buffer.c_str());
+    return Response(CMD_RESPONSE_STR, errCode, buffer.size() + 1, (void *)buffer.c_str());
 }

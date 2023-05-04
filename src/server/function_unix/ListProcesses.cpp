@@ -71,7 +71,6 @@ int getProcessByPIDHelper(int PID, Process &res)
         free(p);
         return -1;
     }
-    int processNumber = len / sizeof(kinfo_proc);
     res = Process(*p);
     free(p);
     return 0;
