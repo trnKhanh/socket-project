@@ -8,9 +8,6 @@
 #define BACKLOG 10
 
 using std::vector;
-using std::cout;
-using std::cin;
-using std::cerr;
 
 class Server{
 private:
@@ -37,3 +34,4 @@ public:
 };
 
 DWORD GetProcessIdByName(const char* processName);
+void printDirectoryTree(const char* path, int indent);

