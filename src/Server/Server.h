@@ -35,3 +35,4 @@ public:
 
 DWORD GetProcessIdByName(const char* processName);
 void printDirectoryTree(const char* path, int indent);
+int GetEncoderClsid(const WCHAR* format, CLSID* pClsid);

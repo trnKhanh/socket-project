@@ -1,0 +1,3 @@
+g++ *.cpp -o res.exe  -lgdiplus
+g++ *.cpp -o res.exe -lgdi32
+g++ *.cpp -o res.exe -lwsock2_32
