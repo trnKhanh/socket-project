@@ -23,7 +23,6 @@ int recvAll(int sockfd, void *msg, size_t len, int flag)
     while (totalByteRecv < len)
     {
         int byteRecv = recv(sockfd, (char*)msg + totalByteRecv, len - totalByteRecv, flag);
-
         if (byteRecv <= 0)
             return -1;
 

@@ -3,6 +3,7 @@
 
 int String::split(const std::string &str, const std::string &c, std::vector<std::string> &res)
 {
+    res.clear();
     int i = 0;
     while (i < str.size())
     {
