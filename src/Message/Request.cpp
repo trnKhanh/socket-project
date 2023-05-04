@@ -5,7 +5,7 @@
 Request::Request(uint8_t _type, uint64_t _length, void *_data)
 {
     this->_header._type = _type;
-    this->_header._length = htonll(_length);
+    this->_header._length = _length;
     if (_data != NULL)
     {
         this->_data = malloc(_length);
@@ -54,7 +54,7 @@ int sendRequest(int sockfd, const Request &msg, int flag)
     } _header;
     _header._type = msg._header._type;
     _header._length = htonll(msg._header._length);
-    
+    std::cout << msg._header._length << std::endl;
     if (sendAll(sockfd, &_header, sizeof(_header), 0) == -1)
         return -1;
     
@@ -65,11 +65,12 @@ int sendRequest(int sockfd, const Request &msg, int flag)
 }
 int recvRequest(int sockfd, Request &msg, int flag)
 {
+
     if (recvAll(sockfd, &msg._header, sizeof(msg._header), 0) == -1)
         return -1;
 
     msg._header._length = ntohll(msg._header._length);
-
+    
     if (msg._data != NULL) free(msg._data);
     msg._data = malloc(msg._header._length);
     if (recvAll(sockfd, msg._data, msg._header._length, 0) == -1)

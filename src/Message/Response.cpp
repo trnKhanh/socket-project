@@ -50,6 +50,14 @@ void *Response::data()
 {
     return this->_data;
 }
+uint32_t Response::errCode()
+{
+    return this->_header._errcode;
+}
+uint64_t Response::length()
+{
+    return this->_header._length;
+}
 int sendResponse(int sockfd, const Response &msg, int flag)
 {
     struct {
@@ -79,9 +87,10 @@ int recvResponse(int sockfd, Response &msg, int flag)
 
     if (msg._data != NULL) free(msg._data);
     msg._data = malloc(msg._header._length);
+    std::cout << "recv successfully\n";
     if (recvAll(sockfd, msg._data, msg._header._length, 0) == -1)
         return -1;
-
+std::cout << "recv successfully\n";
     return 0;
 }
 
