@@ -8,6 +8,7 @@
 #include "../Message/Response.h"
 #include "../Utils/InUtils.h"
 #include <poll.h>
+#include <fstream>
 
 Client::Client()
 {
@@ -23,10 +24,10 @@ Client::Client()
 
     std::cout << "Choose server to connect: ";
     std::string name = servers[0];
-    std::cin >> name;
+    // std::cin >> name;
 
     addrinfo hints, *servinfo;
-    int status, yes = 1;
+    int status;
 
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_INET;
@@ -159,10 +160,100 @@ int Client::discover(std::vector<std::string> &servers)
             break;
         
         Response buffer;
+        addrlen = sizeof(serverAddr);
         recvfromResponse(disfd, buffer, 0, (sockaddr*)&serverAddr, &addrlen);
         if (buffer.type() == DISCOVER_RESPONSE)
             servers.push_back(getIpStr((sockaddr *)&serverAddr));
     }
     close(disfd);
+    return 0;
+}
+
+int Client::listApp()
+{
+    Request req(LIST_APP_REQUEST, 0, NULL);
+    if (sendRequest(this->sockfd, req, 0))
+        return -1;
+    Response res;
+    if (recvResponse(this->sockfd, res, 0))
+        return -1;
+    if (res.errCode() == FAIL_CODE || res.type() != CMD_RESPONSE_STR)
+        return -1;
+    std::cout << (char*)res.data() << "\n";
+    return 0;
+}
+int Client::startApp(const std::string &appName)
+{
+    Request req(START_APP_REQUEST, appName.size() + 1, (void *)appName.c_str());
+    if (sendRequest(this->sockfd, req, 0))
+        return -1;
+    Response res;
+    if (recvResponse(this->sockfd, res, 0))
+        return -1;
+    if (res.errCode() == FAIL_CODE || res.type() != CMD_RESPONSE_EMPTY)
+        return -1;
+    return 0;
+}
+int Client::stopApp(const std::string &appName)
+{
+    Request req(STOP_APP_REQUEST, appName.size() + 1, (void *)appName.c_str());
+    if (sendRequest(this->sockfd, req, 0))
+        return -1;
+    Response res;
+    if (recvResponse(this->sockfd, res, 0))
+        return -1;
+    if (res.errCode() == FAIL_CODE || res.type() != CMD_RESPONSE_EMPTY)
+        return -1;
+    return 0;
+}
+
+int Client::listProcesss()
+{
+    Request req(LIST_PROC_REQUEST, 0, NULL);
+    if (sendRequest(this->sockfd, req, 0))
+        return -1;
+    Response res;
+    if (recvResponse(this->sockfd, res, 0))
+        return -1;
+    if (res.errCode() == FAIL_CODE || res.type() != CMD_RESPONSE_STR)
+        return -1;
+    std::cout << (char*)res.data() << "\n";
+    return 0;
+}
+
+int Client::screenshot()
+{
+    Request req(SCREENSHOT_REQUEST, 0, NULL);
+    if (sendRequest(this->sockfd, req, 0))
+        return -1;
+    Response res;
+    if (recvResponse(this->sockfd, res, 0))
+        return -1;
+    if (res.errCode() == FAIL_CODE || res.type() != CMD_RESPONSE_PNG)
+        return -1;
+    std::fstream is("screenshot.png", std::ios::binary);
+    if (!is)
+        return -1;
+    is.write((char *)res.data(), res.length());
+    return 0;
+}
+
+// int Client::startKeylog();
+// int Client::stopKeylog();
+
+int Client::dirTree(const std::string pathName)
+{
+    Request req(DIR_TREE_REQUEST, pathName.size() + 1, (void *)pathName.c_str());
+    if (sendRequest(this->sockfd, req, 0))
+        return -1;
+    Response res;
+    if (recvResponse(this->sockfd, res, 0))
+        return -1;
+    if (res.errCode() == FAIL_CODE || res.type() != CMD_RESPONSE_STR)
+    {
+        std::cout << "invalid response\n";
+        return -1;
+    }
+    std::cout << (char*)res.data() << "\n";
     return 0;
 }

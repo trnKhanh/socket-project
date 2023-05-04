@@ -2,9 +2,7 @@
 #include <vector>
 #include <arpa/inet.h>
 #include <string>
-
-#define SERVER_PORT "6910"
-#define CLIENT_PORT "6911"
+#include "../GlobalConstant.h"
 
 class Client {
     int sockfd;
@@ -15,8 +13,8 @@ public:
     int discover(std::vector<std::string> &servers);
 
     int listApp();  
-    int startApp(const char *appName);
-    int stopApp(const char *appName);
+    int startApp(const std::string &appName);
+    int stopApp(const std::string &appName);
     
     int listProcesss();
 
@@ -25,5 +23,5 @@ public:
     int startKeylog();
     int stopKeylog();
 
-    int dirTree(); 
+    int dirTree(const std::string pathName); 
 };
