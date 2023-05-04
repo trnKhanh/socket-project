@@ -1,3 +1,3 @@
 #pragma once
 #include <string>
-int listDirTree(const char *pathName, std::string &res);
+int listDirTreeHelper(const char *pathName, std::string &res);

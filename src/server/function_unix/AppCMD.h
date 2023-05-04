@@ -1,3 +1,6 @@
 #pragma once
 #include <string>
-int listApp(std::string &res);
+
+int listAppHelper(std::string &res);
+int startAppHelper(const std::string &appName);
+int stopAppHelper(const std::string &appName);

@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 
-int listProcesses(std::vector<Process> &Processes);
-int listProcessesStr(std::string &res);
+int listProcessesHelper(std::vector<Process> &Processes);
+int listProcessesStrHelper(std::string &res);
+int getProcessByPIDHelper(int PID, Process &res);
 

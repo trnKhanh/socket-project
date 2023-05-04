@@ -5,9 +5,10 @@
 #include <string>
 
 class Process {
-    int pid;
-    char name[PROC_PIDPATHINFO_MAXSIZE];
+    int _pid;
+    char _name[PROC_PIDPATHINFO_MAXSIZE];
 public:
+    Process();
     Process(const kinfo_proc &);
     bool operator < (const Process &a) const;
 

