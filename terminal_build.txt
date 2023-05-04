@@ -1,3 +1,5 @@
-g++ *.cpp -o res.exe  -lgdiplus
-g++ *.cpp -o res.exe -lgdi32
-g++ *.cpp -o res.exe -lwsock2_32
+Build for Server:
+g++ src/Server/*.cpp src/ServerApp.cpp src/Utils/*.cpp src/Message/*.cpp -o bin/server.exe  -lgdiplus -lgdi32 -lwsock2_32
+
+Build for Client:
+g++ src/Client/*.cpp src/ClientApp.cpp src/Utils/*.cpp src/Message/*.cpp -o bin/client.exe  -lgdiplus -lgdi32 -lwsock2_32
