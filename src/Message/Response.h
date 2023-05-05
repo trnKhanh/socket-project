@@ -21,8 +21,8 @@
 
 #define DIR_TREE_RESPONSE ((1 << 5) | (1 << 3) | (1 << 0))
 
-#define OK_ERRCODE 0
-#define FAIL_ERRCODE 1  
+#define OK_CODE 0
+#define FAIL_CODE 1  
 
 class Response {
     struct {

@@ -7,6 +7,7 @@
 #include <psapi.h>
 #include <filesystem>
 #include <tlhelp32.h>
+#include <sstream>
 
 // Screen shot
 #include <gdiplus.h>
@@ -23,6 +24,7 @@
 using std::cin;
 using std::cout;
 using std::cerr;
+using std::stringstream;
 
 using namespace Gdiplus;
 
@@ -192,7 +194,7 @@ void Server::start(){
                     if (req.type() == DISCOVER_REQUEST){
                         cout << "Receive discover message from " << getIpStr((sockaddr *)&remote_address) << "::"
                         << ntohs(((sockaddr_in *)&remote_address)->sin_port) << '\n';
-                        Response msg(DISCOVER_RESPONSE, OK_ERRCODE, 0, NULL);
+                        Response msg(DISCOVER_RESPONSE, OK_CODE, 0, NULL);
                         
                         sendtoResponse(disfd, msg, 0, (sockaddr *)&remote_address, addrlen);
                         continue;
@@ -200,71 +202,73 @@ void Server::start(){
                     
                 } 
                 else{
-                    Request req;
+                    Response responseToClient;
+                    Request requestFromClient;
+
                     addrlen = sizeof(remote_address);
-                    recvfromRequest(pfd.fd, req, 0, (sockaddr*)&remote_address, &addrlen);
-                    if (req.type() == LIST_PROCESS_REQUEST) {
-                        DWORD aProcesses[1024], cbNeeded, cProcesses;
-                        if (EnumProcesses(aProcesses, sizeof(aProcesses), &cbNeeded)) {
-                            // Calculate how many process identifiers were returned
-                            cProcesses = cbNeeded / sizeof(DWORD);
-                            // Get the process names and send them to the client
-                            char numProc[20];
-                            my_itos(numProc, cProcesses);
-                            cout << cProcesses << '\n';
-                            send(pfd.fd, numProc, strlen(numProc), 0);
-                            for (DWORD i = 0; i < cProcesses; i++) {
-                                HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, aProcesses[i]);
-                                if (hProcess != NULL) {
-                                    char procName[MAX_PATH];
-                                    if (GetModuleBaseNameA(hProcess, NULL, procName, sizeof(procName)) > 0) {
-                                        send(pfd.fd, procName, strlen(procName), 0);
-                                        send(pfd.fd, "\n", 1, 0);
-                                    }
-                                    CloseHandle(hProcess);
-                                }
-                            }
-                        }
+                    int status = recvRequest(pfd.fd, requestFromClient, 0);
+
+                    if(status == -1){
+                        cerr << "Connection closed\n";
+                        break;
                     }
-                    else if(req.type() == LIST_APP_REQUEST){
-                        // Run the WMIC command to retrieve the list of installed applications
-                        FILE* fp = _popen("WMIC /Node:localhost product get name,InstallLocation", "r");
-                        if(fp == NULL){
-                            cerr << "Failed to excute command\n";
-                            continue;
-                        }
-                        char buffer[1024];
-                        // Read the output of the WMIC command and send it to the client over the socket
-                        while (fgets(buffer, sizeof(buffer), fp) != NULL) {
-                            // cout << buffer << '\n';
-                            send(pfd.fd, buffer, strlen(buffer), 0);
-                        }
-                        _pclose(fp);
-                    }
-                    else if(req.type() == START_APP_REQUEST){
-                        this->startApp("", pfd.fd);
-                    }
-                    else if(req.type() == STOP_APP_REQUEST){
-                        this->stopApp("", pfd.fd);
-                    }
-                    else if (req.type() == DISCONNECT_REQUEST)
-                        break;   
+
+                    if(requestFromClient.type() == LIST_APP_REQUEST)
+                        responseToClient = this->listApp();
+                    else if (requestFromClient.type() == LIST_PROCESS_REQUEST) 
+                        responseToClient = this->listProcess();
+                    else if(requestFromClient.type() == START_APP_REQUEST)
+                        responseToClient = this->startApp("");
+                    else if(requestFromClient.type() == STOP_APP_REQUEST)
+                        responseToClient = this->stopApp("");
+                    else if (requestFromClient.type() == SCREENSHOT_REQUEST)
+                        responseToClient = this->screenShot();
+                    else if (requestFromClient.type() == DIR_TREE_REQUEST)
+                        responseToClient = this->dirTree();
                     else {
                         // Unknown request
                         const char* response = "UNKNOWN REQUEST\n";
                         send(pfd.fd, response, strlen(response), 0);
                     }
+
+                    status = sendResponse(pfd.fd, responseToClient, 0);
+                    if(status == -1)
+                        cerr << "Can't send response.\n";
                 }
             }
         }
     } 
 }
 
-int Server::listApp(SOCKET& fd){
-    return 0;
+Response Server::listApp(){
+    uint32_t errCode;
+    string result;
+
+    // Run the WMIC command to retrieve the list of installed applications
+    FILE* fp = _popen("WMIC /Node:localhost product get name,InstallLocation", "r");
+    if(fp == NULL){
+        errCode = FAIL_CODE;
+        //cerr << "Failed to excute command\n";
+    }
+    else{
+        errCode = OK_CODE;
+        stringstream builder;
+        char buffer[1024];
+        // Read the output of the WMIC command and send it to the client over the socket
+
+        while (fgets(buffer, sizeof(buffer), fp) != NULL) {
+            // cout << buffer << '\n';
+            //send(fd, buffer, strlen(buffer), 0);
+            builder << buffer;
+        }
+        result = builder.str();
+    }
+    
+    _pclose(fp);
+    return Response(LIST_APP_RESPONSE, errCode, result.size() + 1, (void *)result.c_str());
 }
 
-int Server::startApp(const char* appName, SOCKET& fd){
+Response Server::startApp(const char* appName){
     // The name of the application to retrieve information for
 
     // Get the size of the buffer required to store the application information
@@ -345,7 +349,7 @@ int Server::startApp(const char* appName, SOCKET& fd){
     return 0;
 }
 
-int Server::stopApp(const char* appName, SOCKET& fd){
+Response Server::stopApp(const char* appName){
     char* processName = (char*)malloc(strlen(appName) + 5);
     strcpy(processName, appName);
     strcat(processName, ".exe");
@@ -372,11 +376,40 @@ int Server::stopApp(const char* appName, SOCKET& fd){
     return 0;
 }
 
-int Server::listProcess(SOCKET& fd){
-    return 0;
+Response Server::listProcess(){
+    stringstream builder;
+    string result;
+
+    DWORD aProcesses[1024], cbNeeded, cProcesses;
+    if (EnumProcesses(aProcesses, sizeof(aProcesses), &cbNeeded)){
+        // Calculate how many process identifiers were returned
+        cProcesses = cbNeeded / sizeof(DWORD);
+        // Get the process names and send them to the client
+        // char numProc[20];
+        // my_itos(numProc, cProcesses);
+        // cout << cProcesses << '\n';
+        builder << "Running Process: " << cProcesses;
+        //send(pfd.fd, numProc, strlen(numProc), 0);
+        for (DWORD i = 0; i < cProcesses; i++) {
+            HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, aProcesses[i]);
+            if (hProcess != NULL) {
+                char procName[MAX_PATH];
+                if (GetModuleBaseNameA(hProcess, NULL, procName, sizeof(procName)) > 0) {
+                    builder << procName << '\n';
+                    // send(pfd.fd, procName, strlen(procName), 0);
+                    // send(pfd.fd, "\n", 1, 0);
+                }
+            CloseHandle(hProcess);
+            }
+        }
+    }
+
+    uint32_t errCode = OK_CODE;
+    result = builder.str();
+    return Response(LIST_PROCESS_RESPONSE, errCode, result.size() + 1, (void *)result.c_str());
 }
 
-int Server::screenShot(SOCKET& fd){
+Response Server::screenShot(){
     GdiplusStartupInput gdiplusStartupInput;
     ULONG_PTR gdiplusToken;
     GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
@@ -405,13 +438,20 @@ int Server::screenShot(SOCKET& fd){
     return 0;
 }
 
-int Server::keyLog(SOCKET& fd){
+Response Server::keyLog(){
     return 0;
 }
     
-int Server::dirTree(SOCKET& fd){
+Response Server::dirTree(){
+    uint32_t errCode;
+    stringstream builder;
+    string result;
+
     printDirectoryTree("C:\\", 0);
-    return 0;
+    
+    errCode = OK_CODE;
+    result = builder.str();
+    return Response(DIR_TREE_RESPONSE, errCode, result.size() + 1, (void*)result.c_str());
 }
 
 // Function to get the PID of a process given its name

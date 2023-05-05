@@ -4,6 +4,8 @@
 #include <WS2tcpip.h>
 #include <iostream>
 
+#include "../Message/Response.h"
+
 #define SERVER_PORT "6910"
 #define BACKLOG 10
 
@@ -20,17 +22,17 @@ public:
 
     void start();
     
-    int listApp(SOCKET& fd);
-    int startApp(const char* appName, SOCKET& fd);
-    int stopApp(const char* appName, SOCKET& fd);
+    Response listApp();
+    Response startApp(const char* appName);
+    Response stopApp(const char* appName);
 
-    int listProcess(SOCKET& fd);
+    Response listProcess();
 
-    int screenShot(SOCKET& fd);
+    Response screenShot();
 
-    int keyLog(SOCKET& fd);
+    Response keyLog();
 
-    int dirTree(SOCKET& fd); 
+    Response dirTree(); 
 };
 
 DWORD GetProcessIdByName(const char* processName);
