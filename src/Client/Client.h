@@ -24,7 +24,7 @@ public:
     
     int listProcesss();
 
-    int screenshot();
+    int screenShot();
 
     int startKeylog();
     int stopKeylog();

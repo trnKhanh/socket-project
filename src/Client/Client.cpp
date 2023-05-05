@@ -1,9 +1,11 @@
+#include "Client.h"
+
 #include <WinSock2.h>
+#include <Windows.h>
 #include <cstring>
 #include <iostream>
-#include "Windows.h"
+#include <fstream>
 
-#include "Client.h"
 #include "../Message/Request.h"
 #include "../Message/Response.h"
 #include "../Utils/InUtils.h"
@@ -12,6 +14,8 @@
 using std::cerr;
 using std::cout;
 using std::cin;
+using std::ios;
+using std::ofstream;
 
 Client::Client(){
     WSADATA wsaData;
@@ -277,7 +281,28 @@ int Client::listProcesss(){
     return 0;
 }
 
-int Client::screenshot(){
+int Client::screenShot(){
+    Request requestToServer(SCREENSHOT_REQUEST, 0, NULL);
+    int status = sendRequest(this->sockfd, requestToServer, 0);
+    if(status == SOCKET_ERROR)
+        return SOCKET_ERROR;
+
+    Response responseFromServer;
+    status = recvResponse(this->sockfd, responseFromServer, 0);
+    if(status == SOCKET_ERROR)
+        return SOCKET_ERROR;
+
+    if(responseFromServer.errCode() == FAIL_CODE)
+        return -1;
+
+    ofstream fo("screenShotFromServer.png", ios::binary);
+    if(fo.fail()){
+        cerr << "Client: Can't create file screenshot png.\n";
+        return -1;
+    }
+    fo.write((char*)responseFromServer.data(), responseFromServer.length());
+    fo.close();
+    cout << "Client: Created screenShotFromServer.png from installed data.\n";
     return 0;
 }
 
