@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <string>
+
 #include "WinSock2.h"
 
 #define SERVER_PORT "6910"

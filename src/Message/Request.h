@@ -7,6 +7,7 @@
 
 #define DISCOVER_REQUEST ((1 << 7))
 #define DISCONNECT_REQUEST ((1 << 7) | (1 << 0))
+#define UNKNOWN_REQUEST ((1 << 7) | (1 << 1))
 
 #define LIST_APP_REQUEST ((1 << 3) | (1 << 0))
 #define START_APP_REQUEST ((1 << 3) | (1 << 1))
@@ -24,23 +25,23 @@
 
 class Request {
     struct {
-        uint8_t type;
-        uint64_t length;
-    } header;
-    void *data;
+        uint8_t _type;
+        uint64_t _length;
+    } _header;
+    void *_data;
 public:
     Request(uint8_t type, uint64_t length, void *data);
     Request();
-    Request(const Request &r);
     ~Request();
-    
+    Request(const Request &r);
     Request& operator = (const Request &r);
 
     uint8_t type();
+    void * data();
 
-    friend int sendRequest(int sockfd, const Request &msg, int flag);
-    friend int recvRequest(int sockfd, Request &msg, int flag);
+    friend int sendRequest(SOCKET sockfd, const Request &msg, int flag);
+    friend int recvRequest(SOCKET sockfd, Request &msg, int flag);
 
-    friend int sendtoRequest(int sockfd, const Request &msg, int flag, const sockaddr *addr, socklen_t addrlen);
-    friend int recvfromRequest(int sockfd, Request &msg, int flag, sockaddr *addr, socklen_t *addrlen);
+    friend int sendtoRequest(SOCKET sockfd, const Request &msg, int flag, const sockaddr *addr, socklen_t addrlen);
+    friend int recvfromRequest(SOCKET sockfd, Request &msg, int flag, sockaddr *addr, socklen_t *addrlen);
 };

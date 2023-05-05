@@ -1,107 +1,115 @@
+#include "Request.h"
+
 #include <cstring>
 
-#include "Request.h"
 #include "../Utils/MsgTransport.h"
 #include "../Utils/ConvertUtils.h"
 
-Request::Request(uint8_t type, uint64_t length, void *data){
-    this->header.type = type;
-    this->header.length = my_htonll(length);
-    if (data != NULL){
-        this->data = malloc(length);
-        memcpy(this->data, data, length);
-    }
-    else
-        this->data = NULL;
+using std::cout;
+
+Request::Request(uint8_t _type, uint64_t _length, void *_data){
+    this->_header._type = _type;
+    this->_header._length = _length;
+    if (_data != NULL){
+        this->_data = malloc(_length);
+        memcpy(this->_data, _data, _length);
+    } 
+    else 
+        this->_data = NULL;
 }
 
 Request::Request(){
-    this->header.type = 0;
-    this->header.length = 0;
-    this->data = NULL;
+    this->_header._type = 0;
+    this->_header._length = 0;
+    this->_data = NULL;
 }
 
 Request::~Request(){
-    if (this->data != NULL)
-        free(this->data);
+    if (this->_data != NULL)
+        free(this->_data);
 }
 
 Request::Request(const Request &r){
-    this->header.type = r.header.type;
-    this->header.length = r.header.length;
-    this->data = malloc(this->header.length);
-    memcpy(this->data, r.data, this->header.length);
+    this->_header._type = r._header._type;
+    this->_header._length = r._header._length;
+    this->_data = malloc(this->_header._length);
+    memcpy(this->_data, r._data, this->_header._length);
 }
 
 Request& Request::operator = (const Request &r){
-    this->header.type = r.header.type;
-    this->header.length = r.header.length;
-    this->data = malloc(this->header.length);
-    memcpy(this->data, r.data, this->header.length);
+    this->_header._type = r._header._type;
+    this->_header._length = r._header._length;
+    this->_data = malloc(this->_header._length);
+    memcpy(this->_data, r._data, this->_header._length);
     return *this;
 }
 
 uint8_t Request::type(){
-    return this->header.type;
+    return this->_header._type;
 }
 
-int sendRequest(int sockfd, const Request &msg, int flag){
+void *Request::data(){
+    return this->_data;
+}
+
+int sendRequest(SOCKET sockfd, const Request &msg, int flag){
     struct {
-        uint8_t type;
-        uint64_t length;
-    } header;
-    header.type = msg.header.type;
-    header.length = my_htonll(msg.header.length);
-    
-    if (sendAll(sockfd, &header, sizeof(header), 0) == -1)
+        uint8_t _type;
+        uint64_t _length;
+    } _header;
+    _header._type = msg._header._type;
+    _header._length = my_htonll(msg._header._length);
+    if (sendAll(sockfd, &_header, sizeof(_header), 0) == -1)
         return -1;
     
-    if (sendAll(sockfd, msg.data, msg.header.length, 0) == -1)
+    if (sendAll(sockfd, msg._data, msg._header._length, 0) == -1)
         return -1;
 
     return 0;
 }
 
-int recvRequest(int sockfd, Request &msg, int flag){
-    if (recvAll(sockfd, &msg.header, sizeof(msg.header), 0) == -1)
+int recvRequest(SOCKET sockfd, Request &msg, int flag){
+    if (recvAll(sockfd, &msg._header, sizeof(msg._header), 0) == -1)
         return -1;
 
-    msg.header.length = my_ntohll(msg.header.length);
-
-    if (msg.data != NULL) free(msg.data);
-    msg.data = malloc(msg.header.length);
-    if (recvAll(sockfd, msg.data, msg.header.length, 0) == -1)
+    msg._header._length = my_ntohll(msg._header._length);
+    
+    if (msg._data != NULL) 
+        free(msg._data);
+    
+    msg._data = malloc(msg._header._length);
+    if (recvAll(sockfd, msg._data, msg._header._length, 0) == -1)
         return -1;
 
     return 0;
 }
 
-int sendtoRequest(int sockfd, const Request &msg, int flag, const sockaddr *addr, socklen_t addrlen){
+int sendtoRequest(SOCKET sockfd, const Request &msg, int flag, const sockaddr *addr, socklen_t addrlen){
     struct {
-        uint8_t type;
-        uint64_t length;
-    } header;
-    header.type = msg.header.type;
-    header.length = my_htonll(msg.header.length);
+        uint8_t _type;
+        uint64_t _length;
+    } _header;
+    _header._type = msg._header._type;
+    _header._length = my_htonll(msg._header._length);
     
-    if (sendtoAll(sockfd, &header, sizeof(header), 0, addr, addrlen) == -1)
+    if (sendtoAll(sockfd, &_header, sizeof(_header), 0, addr, addrlen) == -1)
         return -1;
     
-    if (sendtoAll(sockfd, msg.data, msg.header.length, 0, addr, addrlen) == -1)
+    if (sendtoAll(sockfd, msg._data, msg._header._length, 0, addr, addrlen) == -1)
         return -1;
 
     return 0;
 }
 
-int recvfromRequest(int sockfd, Request &msg, int flag, sockaddr *addr, socklen_t *addrlen){
-    if (recvfromAll(sockfd, &msg.header, sizeof(msg.header), 0, addr, addrlen) == -1)
+int recvfromRequest(SOCKET sockfd, Request &msg, int flag, sockaddr *addr, socklen_t *addrlen){
+    if (recvfromAll(sockfd, &msg._header, sizeof(msg._header), 0, addr, addrlen) == -1)
         return -1;
 
-    msg.header.length = my_ntohll(msg.header.length);
+    msg._header._length = my_ntohll(msg._header._length);
 
-    if (msg.data != NULL) free(msg.data);
-    msg.data = malloc(msg.header.length);
-    if (recvfromAll(sockfd, msg.data, msg.header.length, 0, addr, addrlen) == -1)
+    if (msg._data != NULL) free(msg._data);
+    msg._data = malloc(msg._header._length);
+    if (recvfromAll(sockfd, msg._data, msg._header._length, 0, addr, addrlen) == -1)
         return -1;
 
     return 0;

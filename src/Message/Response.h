@@ -5,6 +5,7 @@
 // Structure Macro message
 
 #define DISCOVER_RESPONSE ((1 << 7))
+#define UNKNOWN_RESPONSE ((1 << 7) | (1 << 1))
 #define DISCONNECT_RESPONSE ((1 << 7) | (1 << 0))
 
 #define LIST_APP_RESPONSE ((1 << 3) | (1 << 0))
@@ -26,22 +27,26 @@
 
 class Response {
     struct {
-        uint8_t type;
-        uint32_t errcode; 
-        uint64_t length;
-    } header;
-    void *data;
+        uint8_t _type;
+        uint32_t _errcode; 
+        uint64_t _length;
+    } _header;
+    void* _data;
 public:
     Response(uint8_t type, uint32_t errcode, uint64_t length, void *data);
     Response();
     ~Response();
     Response(const Response &r);
     Response& operator = (const Response &r);
+
     uint8_t type();
+    void *data();
+    uint32_t errCode();
+    uint64_t length();
 
-    friend int sendResponse(int sockfd, const Response &msg, int flag);
-    friend int recvResponse(int sockfd, Response &msg, int flag);
+    friend int sendResponse(SOCKET sockfd, const Response &msg, int flag);
+    friend int recvResponse(SOCKET sockfd, Response &msg, int flag);
 
-    friend int sendtoResponse(int sockfd, const Response &msg, int flag, const sockaddr *addr, socklen_t addrlen);
-    friend int recvfromResponse(int sockfd, Response &msg, int flag, sockaddr *addr, socklen_t *addrlen);
+    friend int sendtoResponse(SOCKET sockfd, const Response &msg, int flag, const sockaddr *addr, socklen_t addrlen);
+    friend int recvfromResponse(SOCKET sockfd, Response &msg, int flag, sockaddr *addr, socklen_t *addrlen);
 };

@@ -28,7 +28,6 @@ using std::stringstream;
 
 using namespace Gdiplus;
 
-
 Server::~Server(){
     cout << "Server closed." << "\n";
     closesocket(this->listener);
@@ -205,7 +204,6 @@ void Server::start(){
                     Response responseToClient;
                     Request requestFromClient;
 
-                    addrlen = sizeof(remote_address);
                     int status = recvRequest(pfd.fd, requestFromClient, 0);
 
                     if(status == -1){
@@ -215,24 +213,21 @@ void Server::start(){
 
                     if(requestFromClient.type() == LIST_APP_REQUEST)
                         responseToClient = this->listApp();
-                    else if (requestFromClient.type() == LIST_PROCESS_REQUEST) 
-                        responseToClient = this->listProcess();
                     else if(requestFromClient.type() == START_APP_REQUEST)
                         responseToClient = this->startApp("");
                     else if(requestFromClient.type() == STOP_APP_REQUEST)
                         responseToClient = this->stopApp("");
+                    else if (requestFromClient.type() == LIST_PROCESS_REQUEST) 
+                        responseToClient = this->listProcess();
                     else if (requestFromClient.type() == SCREENSHOT_REQUEST)
                         responseToClient = this->screenShot();
                     else if (requestFromClient.type() == DIR_TREE_REQUEST)
                         responseToClient = this->dirTree();
-                    else {
-                        // Unknown request
-                        const char* response = "UNKNOWN REQUEST\n";
-                        send(pfd.fd, response, strlen(response), 0);
-                    }
+                    else 
+                        responseToClient = Response(UNKNOWN_RESPONSE, OK_CODE, 0, NULL);
 
                     status = sendResponse(pfd.fd, responseToClient, 0);
-                    if(status == -1)
+                    if(status == SOCKET_ERROR)
                         cerr << "Can't send response.\n";
                 }
             }
@@ -256,15 +251,18 @@ Response Server::listApp(){
         char buffer[1024];
         // Read the output of the WMIC command and send it to the client over the socket
 
+        int i = 0;
         while (fgets(buffer, sizeof(buffer), fp) != NULL) {
-            // cout << buffer << '\n';
+            cout << buffer << '\n';
             //send(fd, buffer, strlen(buffer), 0);
-            builder << buffer;
+            // builder << buffer;
         }
+        cout << "here.\n";
         result = builder.str();
+        _pclose(fp);
     }
-    
-    _pclose(fp);
+
+    cout << result;
     return Response(LIST_APP_RESPONSE, errCode, result.size() + 1, (void *)result.c_str());
 }
 
@@ -272,6 +270,9 @@ Response Server::startApp(const char* appName){
     // The name of the application to retrieve information for
 
     // Get the size of the buffer required to store the application information
+
+    uint32_t errCode = OK_CODE;
+
     DWORD dataSize = 0;
     if (RegGetValue(
         HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\calc.exe", 
@@ -281,7 +282,8 @@ Response Server::startApp(const char* appName){
         nullptr, 
         &dataSize) != ERROR_SUCCESS){
         cerr << "Failed to get data size\n";
-        return -1;
+        errCode = FAIL_CODE;
+        return Response(START_APP_RESPONSE, errCode, 0, NULL);
     }
 
     // Allocate a buffer to store the application information
@@ -296,7 +298,8 @@ Response Server::startApp(const char* appName){
         &data[0], 
         &dataSize) != ERROR_SUCCESS){
         cerr << "Failed to get data\n";
-        return -1;
+        errCode = FAIL_CODE;
+        return Response(START_APP_RESPONSE, errCode, 0, NULL);
     }
 
     // Convert the data to a wide string
@@ -305,7 +308,8 @@ Response Server::startApp(const char* appName){
     // Check if the file exists
     if (!std::filesystem::exists(appPath.c_str())){
         cerr << "File not found\n";
-        return -1;
+        errCode = FAIL_CODE;
+        return Response(START_APP_RESPONSE, errCode, 0, NULL);
     }
 
     cout << "Application path: " << appPath << '\n';
@@ -336,7 +340,8 @@ Response Server::startApp(const char* appName){
     ){
         cerr << "CreateProcess failed (" << GetLastError() << ").\n";
         delete[] cmd;
-        return -1;
+        errCode = FAIL_CODE;
+        return Response(START_APP_RESPONSE, errCode, 0, NULL);
     }
 
     // Wait until child process exits.
@@ -346,7 +351,7 @@ Response Server::startApp(const char* appName){
     CloseHandle(pi.hProcess);
     CloseHandle(pi.hThread);
     delete[] cmd;
-    return 0;
+    return Response(START_APP_RESPONSE, errCode, 0, NULL);
 }
 
 Response Server::stopApp(const char* appName){
@@ -358,25 +363,30 @@ Response Server::stopApp(const char* appName){
     // Get the process ID of the running process to stop
     DWORD dwProcessId = GetProcessIdByName(processName); // Replace with the actual process ID
 
+    uint32_t errCode = OK_CODE;
     // Open the process
     HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, FALSE, dwProcessId);
     if (hProcess == NULL) {
         cerr << "Error: Failed to open process.\n";
-        return -1;                        
+        errCode = FAIL_CODE;
+        return Response(START_APP_RESPONSE, errCode, 0, NULL);                     
     }
 
     // Terminate the process
     if (!TerminateProcess(hProcess, 0)) {
         cerr << "Error: Failed to terminate process.\n";
         CloseHandle(hProcess);
-        return -1;
+        errCode = FAIL_CODE;
+        return Response(START_APP_RESPONSE, errCode, 0, NULL);  
     }
     // Close the process handle
     CloseHandle(hProcess);
-    return 0;
+    errCode = OK_CODE;
+    return Response(START_APP_RESPONSE, errCode, 0, NULL);  
 }
 
 Response Server::listProcess(){
+    cout << "Server: Received listing processing instruction.\n";
     stringstream builder;
     string result;
 
@@ -385,20 +395,14 @@ Response Server::listProcess(){
         // Calculate how many process identifiers were returned
         cProcesses = cbNeeded / sizeof(DWORD);
         // Get the process names and send them to the client
-        // char numProc[20];
-        // my_itos(numProc, cProcesses);
-        // cout << cProcesses << '\n';
-        builder << "Running Process: " << cProcesses;
-        //send(pfd.fd, numProc, strlen(numProc), 0);
+
+        builder << "Running Process (" << cProcesses << "): \n";
         for (DWORD i = 0; i < cProcesses; i++) {
             HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, aProcesses[i]);
             if (hProcess != NULL) {
                 char procName[MAX_PATH];
-                if (GetModuleBaseNameA(hProcess, NULL, procName, sizeof(procName)) > 0) {
+                if (GetModuleBaseNameA(hProcess, NULL, procName, sizeof(procName)) > 0) 
                     builder << procName << '\n';
-                    // send(pfd.fd, procName, strlen(procName), 0);
-                    // send(pfd.fd, "\n", 1, 0);
-                }
             CloseHandle(hProcess);
             }
         }
@@ -406,6 +410,8 @@ Response Server::listProcess(){
 
     uint32_t errCode = OK_CODE;
     result = builder.str();
+
+    cout << "Server: All processes are listed.\n";
     return Response(LIST_PROCESS_RESPONSE, errCode, result.size() + 1, (void *)result.c_str());
 }
 
@@ -435,11 +441,12 @@ Response Server::screenShot(){
     ReleaseDC(NULL, hdcScreen);
 
     GdiplusShutdown(gdiplusToken);
-    return 0;
+    uint32_t errCode = OK_CODE;
+    return Response(SCREENSHOT_RESPONSE, errCode, 0, NULL);  
 }
 
 Response Server::keyLog(){
-    return 0;
+    return Response(START_KEYLOG_RESPONSE, OK_CODE, 0, NULL); 
 }
     
 Response Server::dirTree(){
