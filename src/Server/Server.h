@@ -1,4 +1,6 @@
 #pragma once
+
+#include <string>
 #include <vector>
 #include <WinSock2.h>
 #include <WS2tcpip.h>
@@ -10,6 +12,7 @@
 #define BACKLOG 10
 
 using std::vector;
+using std::string;
 
 class Server{
 private:
@@ -36,5 +39,5 @@ public:
 };
 
 DWORD GetProcessIdByName(const char* processName);
-void printDirectoryTree(const char* path, int indent);
+string printDirectoryTree(const char* path, int indent);
 int GetEncoderClsid(const WCHAR* format, CLSID* pClsid);
