@@ -236,11 +236,13 @@ void Server::start(){
 }
 
 Response Server::listApp(){
+    cout << "Server: Received listing installed applications instruction.\n";
+
     uint32_t errCode;
     string result;
 
     // Run the WMIC command to retrieve the list of installed applications
-    FILE* fp = _popen("WMIC /Node:localhost product get name,InstallLocation", "r");
+    FILE* fp = _popen("WMIC /Node:localhost product get name,version", "r");
     if(fp == NULL){
         errCode = FAIL_CODE;
         //cerr << "Failed to excute command\n";
@@ -252,17 +254,13 @@ Response Server::listApp(){
         // Read the output of the WMIC command and send it to the client over the socket
 
         int i = 0;
-        while (fgets(buffer, sizeof(buffer), fp) != NULL) {
-            cout << buffer << '\n';
-            //send(fd, buffer, strlen(buffer), 0);
-            // builder << buffer;
-        }
-        cout << "here.\n";
+        while (fgets(buffer, sizeof(buffer), fp) != NULL) 
+            builder << buffer;
         result = builder.str();
         _pclose(fp);
     }
 
-    cout << result;
+    cout << "Server: All installed applications are listed.\n";
     return Response(LIST_APP_RESPONSE, errCode, result.size() + 1, (void *)result.c_str());
 }
 

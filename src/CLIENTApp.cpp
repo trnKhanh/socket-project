@@ -2,10 +2,10 @@
 
 int main(){
     Client* c = new Client();
-    // c->listApp();
+    c->listApp();
     // c->startApp("");
     // c->stopApp("");
-    // c->listProcesss();
+    //c->listProcesss(); // done
     // c->screenShot();
     // c-> dirTree();
     delete c;
