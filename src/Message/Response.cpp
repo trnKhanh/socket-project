@@ -87,10 +87,8 @@ int recvResponse(int sockfd, Response &msg, int flag)
 
     if (msg._data != NULL) free(msg._data);
     msg._data = malloc(msg._header._length);
-    std::cout << "recv successfully\n";
     if (recvAll(sockfd, msg._data, msg._header._length, 0) == -1)
         return -1;
-std::cout << "recv successfully\n";
     return 0;
 }
 

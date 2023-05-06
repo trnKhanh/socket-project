@@ -4,6 +4,7 @@
 #include "../GlobalConstant.h"
 #include "../Message/Request.h"
 #include "../Message/Response.h"
+#include <thread>
 #define BACKLOG 10
 
 class Server {
@@ -11,6 +12,7 @@ private:
     int listener;
     int disfd;
     std::vector<pollfd> pfds;
+    std::thread keylogThread;
 public:
     Server();
     ~Server();
@@ -25,8 +27,8 @@ public:
 
     Response screenshot();
 
-    Response startKeylog();
-    Response stopKeylog();
+    Response startKeylog(int sockfd);
+    Response stopKeylog(int sockfd);
 
     Response dirTree(const char *pathName); 
 };

