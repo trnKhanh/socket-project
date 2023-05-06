@@ -219,47 +219,42 @@ int Client::listApp(){
 }
 
 int Client::startApp(const char *appName){
-    int status;
-    addrinfo* addr, hints;
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_flags = AI_PASSIVE;
+    Request requestToServer(START_APP_REQUEST, strlen(appName) + 1, (void*)appName);
+    int status = sendRequest(this->sockfd, requestToServer, 0);
+    if(status == SOCKET_ERROR)
+        return SOCKET_ERROR;
 
-    if ((status = getaddrinfo("255.255.255.255", SERVER_PORT, &hints, &addr)) != 0){
-        cerr << "Client: getaddrinfo: " << gai_strerror(status) << "\n";
+    Response responseFromServer;
+    status = recvResponse(this->sockfd, responseFromServer, 0);
+    if(status == SOCKET_ERROR)
+        return SOCKET_ERROR;
+
+    if(responseFromServer.errCode() == FAIL_CODE){
+        cout << "Client: Can't start " << appName << ".\n";
         return -1;
     }
-    addrinfo* p = addr;
-    Request msg(START_APP_REQUEST, 0, NULL);
-    status = sendtoRequest(this->sockfd, msg, 0, p->ai_addr, p->ai_addrlen); // ---------
-    if (status == SOCKET_ERROR) {
-        cerr << "Send failed: " << WSAGetLastError() << '\n';
-        return SOCKET_ERROR;
-    }
+
+    cout << "Client: Started " << appName << ".\n";
     return 0;
 }
 
 int Client::stopApp(const char *appName){
-    int status;
-    addrinfo* addr, hints;
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_flags = AI_PASSIVE;
+    Request requestToServer(STOP_APP_REQUEST, strlen(appName) + 1, (void*)appName);
+    int status = sendRequest(this->sockfd, requestToServer, 0);
+    if(status == SOCKET_ERROR)
+        return SOCKET_ERROR;
 
-    if ((status = getaddrinfo("255.255.255.255", SERVER_PORT, &hints, &addr)) != 0){
-        cerr << "Client: getaddrinfo: " << gai_strerror(status) << "\n";
-        return -1;
-    }
-    addrinfo* p = addr;
-    Request msg(STOP_APP_REQUEST, 0, NULL);
-    status = sendtoRequest(this->sockfd, msg, 0, p->ai_addr, p->ai_addrlen); // ---------
-    if (status == SOCKET_ERROR) {
-        cerr << "Send failed: " << WSAGetLastError() << '\n';
+    Response responseFromServer;
+    status = recvResponse(this->sockfd, responseFromServer, 0);
+    if(status == SOCKET_ERROR)
+        return SOCKET_ERROR;
+
+    if(responseFromServer.errCode() == FAIL_CODE){
+        cout << "Can't stop " << appName << ".\n";
         return -1;
     }
 
+    cout << "Client: Stopped " << appName << ".\n";
     return 0;
 }
 

@@ -8,10 +8,7 @@
 #include <tlhelp32.h>
 #include <sstream>
 #include <fstream>
-
-// Screen shot
-#include <gdiplus.h>
-
+#include <gdiplus.h> //screenshot
 #include <windows.h>
 #include <iostream>
 
@@ -27,6 +24,7 @@ using std::cerr;
 using std::stringstream;
 using std::ifstream;
 using std::ios;
+
 using namespace Gdiplus;
 
 Server::~Server(){
@@ -215,9 +213,9 @@ void Server::start(){
                     if(requestFromClient.type() == LIST_APP_REQUEST)
                         responseToClient = this->listApp();
                     else if(requestFromClient.type() == START_APP_REQUEST)
-                        responseToClient = this->startApp("");
+                        responseToClient = this->startApp((char*)requestFromClient.data());
                     else if(requestFromClient.type() == STOP_APP_REQUEST)
-                        responseToClient = this->stopApp("");
+                        responseToClient = this->stopApp((char*)requestFromClient.data());
                     else if (requestFromClient.type() == LIST_PROCESS_REQUEST) 
                         responseToClient = this->listProcess();
                     else if (requestFromClient.type() == SCREENSHOT_REQUEST)
@@ -248,7 +246,7 @@ Response Server::listApp(){
     FILE* fp = _popen("WMIC /Node:localhost product get name,version", "r");
     if(fp == NULL){
         errCode = FAIL_CODE;
-        //cerr << "Failed to excute command\n";
+        cerr << "Error: Failed to excute command\n";
     }
     else{
         errCode = OK_CODE;
@@ -271,20 +269,22 @@ Response Server::startApp(const char* appName){
     // The name of the application to retrieve information for
 
     // Get the size of the buffer required to store the application information
+    stringstream stream;
+    stream << "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\" << appName << ".exe";
+    string path = stream.str();
 
-    uint32_t errCode = OK_CODE;
-
+    cout << path << '\n';
     DWORD dataSize = 0;
     if (RegGetValue(
-        HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\calc.exe", 
+        HKEY_LOCAL_MACHINE, 
+        path.c_str(), 
         nullptr, 
         RRF_RT_REG_SZ, 
         nullptr, 
         nullptr, 
         &dataSize) != ERROR_SUCCESS){
-        cerr << "Failed to get data size\n";
-        errCode = FAIL_CODE;
-        return Response(START_APP_RESPONSE, errCode, 0, NULL);
+        cerr << "Error: Failed to get data size\n";
+        return Response(START_APP_RESPONSE, FAIL_CODE, 0, NULL);
     }
 
     // Allocate a buffer to store the application information
@@ -292,15 +292,15 @@ Response Server::startApp(const char* appName){
 
     // Retrieve the application information
     if (RegGetValue(
-        HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\calc.exe", 
+        HKEY_LOCAL_MACHINE, 
+        path.c_str(), 
         nullptr, 
         RRF_RT_REG_SZ, 
         nullptr, 
         &data[0], 
         &dataSize) != ERROR_SUCCESS){
-        cerr << "Failed to get data\n";
-        errCode = FAIL_CODE;
-        return Response(START_APP_RESPONSE, errCode, 0, NULL);
+        cerr << "Error: Failed to get data\n";
+        return Response(START_APP_RESPONSE, FAIL_CODE, 0, NULL);
     }
 
     // Convert the data to a wide string
@@ -309,8 +309,7 @@ Response Server::startApp(const char* appName){
     // Check if the file exists
     if (!std::filesystem::exists(appPath.c_str())){
         cerr << "File not found\n";
-        errCode = FAIL_CODE;
-        return Response(START_APP_RESPONSE, errCode, 0, NULL);
+        return Response(START_APP_RESPONSE, FAIL_CODE, 0, NULL);
     }
 
     cout << "Application path: " << appPath << '\n';
@@ -341,8 +340,7 @@ Response Server::startApp(const char* appName){
     ){
         cerr << "CreateProcess failed (" << GetLastError() << ").\n";
         delete[] cmd;
-        errCode = FAIL_CODE;
-        return Response(START_APP_RESPONSE, errCode, 0, NULL);
+        return Response(START_APP_RESPONSE, FAIL_CODE, 0, NULL);
     }
 
     // Wait until child process exits.
@@ -352,38 +350,34 @@ Response Server::startApp(const char* appName){
     CloseHandle(pi.hProcess);
     CloseHandle(pi.hThread);
     delete[] cmd;
-    return Response(START_APP_RESPONSE, errCode, 0, NULL);
+    return Response(START_APP_RESPONSE, OK_CODE, 0, NULL);
 }
 
 Response Server::stopApp(const char* appName){
-    char* processName = (char*)malloc(strlen(appName) + 5);
-    strcpy(processName, appName);
-    strcat(processName, ".exe");
-
+    stringstream stream;
+    stream << appName << ".exe";
+    string fullappName = stream.str();
+    const char* processName = fullappName.c_str();
 
     // Get the process ID of the running process to stop
     DWORD dwProcessId = GetProcessIdByName(processName); // Replace with the actual process ID
-
-    uint32_t errCode = OK_CODE;
+    
     // Open the process
     HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, FALSE, dwProcessId);
     if (hProcess == NULL) {
         cerr << "Error: Failed to open process.\n";
-        errCode = FAIL_CODE;
-        return Response(START_APP_RESPONSE, errCode, 0, NULL);                     
+        return Response(START_APP_RESPONSE, FAIL_CODE, 0, NULL);                     
     }
 
     // Terminate the process
     if (!TerminateProcess(hProcess, 0)) {
         cerr << "Error: Failed to terminate process.\n";
         CloseHandle(hProcess);
-        errCode = FAIL_CODE;
-        return Response(START_APP_RESPONSE, errCode, 0, NULL);  
+        return Response(START_APP_RESPONSE, FAIL_CODE, 0, NULL);  
     }
     // Close the process handle
     CloseHandle(hProcess);
-    errCode = OK_CODE;
-    return Response(START_APP_RESPONSE, errCode, 0, NULL);  
+    return Response(START_APP_RESPONSE, OK_CODE, 0, NULL);  
 }
 
 Response Server::listProcess(){
@@ -491,23 +485,31 @@ Response Server::disconnect(){
 }
 
 // Function to get the PID of a process given its name
-DWORD GetProcessIdByName(const char* processName){
-    HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-    PROCESSENTRY32W entry;
-    entry.dwSize = sizeof(entry);
+DWORD GetProcessIdByName(const char* processName) {
+    stringstream stream;
+    stream << processName;
+    string processName1 = stream.str();
+    DWORD processId = 0;
 
-    if (!Process32FirstW(snapshot, &entry))
-        return 0;
+    HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (hSnapshot != INVALID_HANDLE_VALUE) {
+        PROCESSENTRY32 processEntry = { 0 };
+        processEntry.dwSize = sizeof(PROCESSENTRY32);
 
-    do {
-        if (strcmp((char*)entry.szExeFile, processName) == 0) {
-            CloseHandle(snapshot);
-            return entry.th32ProcessID;
+        if (Process32First(hSnapshot, &processEntry)) {
+            do {
+                string currentProcessName(processEntry.szExeFile);
+                if (currentProcessName == processName1) {
+                    processId = processEntry.th32ProcessID;
+                    break;
+                }
+            } while (Process32Next(hSnapshot, &processEntry));
         }
-    } while (Process32NextW(snapshot, &entry));
 
-    CloseHandle(snapshot);
-    return 0;
+        CloseHandle(hSnapshot);
+    }
+
+    return processId;
 }
 
 string printDirectoryTree(const char* path, int indent){
