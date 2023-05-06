@@ -26,8 +26,7 @@ public:
 
     int screenShot();
 
-    int startKeylog();
-    int stopKeylog();
+    int keyLog();
 
     int dirTree();
 

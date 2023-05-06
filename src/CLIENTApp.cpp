@@ -1,6 +1,8 @@
 #include "Client/Client.h"
 #include <iostream>
+#include <string>
 
+using std::string;
 using std::cout;
 using std::cin;
 
@@ -13,8 +15,22 @@ int main(){
         bool is_exit = false;
         switch(type){
             case 1: c->listApp(); break; // done
-            case 2: c->startApp(""); break;
-            case 3: c->stopApp(""); break;
+            case 2:{
+                string appName;
+                cout << "Application name: ";
+                cin.get();
+                getline(cin, appName); 
+                c->startApp(appName.c_str()); 
+                break;
+            }
+            case 3: { // done
+                string appName;
+                cout << "Application name: ";
+                cin.get();
+                getline(cin, appName);
+                c->stopApp(appName.c_str()); 
+                break;
+            }
             case 4: c->listProcesss(); break; // done
             case 5: c->screenShot(); break; // done
             case 6: c->startKeylog(); break;

