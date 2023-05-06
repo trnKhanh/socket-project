@@ -29,5 +29,7 @@ public:
     int startKeylog();
     int stopKeylog();
 
-    int dirTree(); 
+    int dirTree();
+
+    int disconnect(); 
 };

