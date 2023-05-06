@@ -275,7 +275,6 @@ Response Server::startApp(const char* appName){
     stream << "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\" << appName << ".exe";
     string path = stream.str();
 
-    cout << path << '\n';
     DWORD dataSize = 0;
     if (RegGetValue(
         HKEY_LOCAL_MACHINE, 
@@ -315,8 +314,7 @@ Response Server::startApp(const char* appName){
     }
 
     cout << "Application path: " << appPath << '\n';
-    char* cmd = NULL; // works... calc.exe is in windows/system32 
-    string_to_listchar(cmd, appPath);
+    const char* cmd = appPath.c_str(); // works... calc.exe is in windows/system32 
     // char* cmd = "chrome"; // doesn't work... how can I add the path if it's not known (e.g. windows installed on D:\)
     // char* cmd = "c:/program files (x86)/google/chrome/application/chrome"; // works (even without extension .exe)
 
