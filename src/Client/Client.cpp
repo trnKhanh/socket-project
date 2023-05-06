@@ -83,10 +83,10 @@ Client::Client(){
     freeaddrinfo(servinfo);
 
     if (p == NULL){
-        cerr << "Client: fail to connect\n";
+        cerr << "Error: Fail to connect\n";
         exit(1);
     }
-    cout << "Connected to server.\n";
+    cout << "Client: Connected to server.\n";
 }
 
 Client::~Client(){
@@ -184,7 +184,7 @@ int Client::discover(vector<string> &servers){
             return -1;
         }
         if (rv == 0){ // time out
-            cout << "Time out...\n";
+            cout << "Time out...\n\n";
             break;
         }
         
@@ -250,7 +250,7 @@ int Client::stopApp(const char *appName){
         return SOCKET_ERROR;
 
     if(responseFromServer.errCode() == FAIL_CODE){
-        cout << "Can't stop " << appName << ".\n";
+        cout << "Client: Can't stop " << appName << ".\n";
         return -1;
     }
 

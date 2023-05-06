@@ -272,8 +272,8 @@ Response Server::startApp(const char* appName){
     os << "start " << appName;
     string cmd = os.str();
     if(system(cmd.c_str()) == 0)
-        return Response(START_APP_RESPONSE, FAIL_CODE, 0, NULL);
-    return Response(START_APP_RESPONSE, OK_CODE, 0, NULL);
+        return Response(START_APP_RESPONSE, OK_CODE, 0, NULL);
+    return Response(START_APP_RESPONSE, FAIL_CODE, 0, NULL);
 }
 
 Response Server::stopApp(const char* appName){
