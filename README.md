@@ -2,7 +2,7 @@ Socket Process:
 
 1. Application:
  - List App: Done
- - Start App: Not yes
+ - Start App: Done
  - Stop App: Done
 2. List Processes: Done
 3. ScreenShot: Done

