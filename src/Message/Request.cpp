@@ -54,7 +54,6 @@ int sendRequest(int sockfd, const Request &msg, int flag)
     } _header;
     _header._type = msg._header._type;
     _header._length = htonll(msg._header._length);
-    std::cout << msg._header._length << std::endl;
     if (sendAll(sockfd, &_header, sizeof(_header), 0) == -1)
         return -1;
     

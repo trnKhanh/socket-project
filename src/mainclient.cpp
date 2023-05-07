@@ -1,11 +1,8 @@
 #include "client/Client.h"
 #include <iostream>
-
+#include "BasicUI/ShowUI.h"
 int main()
 {
     Client c;
-    if (c.startKeylog())
-    {
-        std::cout << "Request fail\n" << "\n";
-    }
+    showUI(c);
 }

@@ -3,9 +3,16 @@
 #include <arpa/inet.h>
 #include <string>
 #include "../GlobalConstant.h"
+#include <thread>
+#include <fstream>
 
 class Client {
+    std::ofstream _keylogFile;
     int sockfd;
+    int _keylogfd;
+    std::string _serverName;
+    std::thread _keylogThread;
+    void recvKeylog();
 public:
     Client();
     ~Client();

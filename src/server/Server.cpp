@@ -198,18 +198,10 @@ void Server::start()
                     if (recvRequest(pfd.fd, buffer, 0) == -1)
                     {
                         int sockfd = pfd.fd;
-                        for (int i = 0; i < keylogfds.size(); ++i)
-                        {
-                            if (keylogfds[i] == sockfd)
-                            {
-                                keylogfds[i] = keylogfds.back();
-                                keylogfds.pop_back();
-                                break;
-                            }
-                        }
                         this->pfds[i] = this->pfds.back();
                         this->pfds.pop_back();
                         std::cerr << "Connection closed\n";
+                        close(sockfd);
                     } 
                     else
                     {
@@ -239,6 +231,13 @@ void Server::start()
                         if (sendResponse(pfd.fd, res, 0) == -1)
                         {
                             perror("sendResponse");
+                        }
+                        if (buffer.type() == STOP_KEYLOG_REQUEST)
+                        {
+                            this->pfds[i] = this->pfds.back();
+                            this->pfds.pop_back();
+                            std::cerr << "Keylog connection closed\n";
+                            close(pfd.fd);
                         }
                     }
 
