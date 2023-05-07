@@ -92,7 +92,6 @@ int recvResponse(int sockfd, Response &msg, int flag)
     return 0;
 }
 
-
 int sendtoResponse(int sockfd, const Response &msg, int flag, const sockaddr *addr, socklen_t addrlen)
 {
     struct {

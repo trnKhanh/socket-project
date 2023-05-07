@@ -11,9 +11,10 @@ int listDirTreeHelper(const char *pathName, std::string &res)
     }
     std::ostringstream os;
     std::filesystem::path mypath(pathName);
-    for (const auto &dirEntry: std::filesystem::recursive_directory_iterator(mypath))
+    
+    for (auto pathIt = std::filesystem::recursive_directory_iterator(mypath); pathIt != std::filesystem::recursive_directory_iterator(); ++pathIt)
     {
-        os << std::filesystem::relative(dirEntry.path(), mypath).string() << "\n";
+        os << std::string(pathIt.depth() * 4, ' ') << (*pathIt).path().filename().string() << "\n";
     }
     res = os.str();
     return 0;

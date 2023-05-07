@@ -1,19 +1,23 @@
+#ifdef __APPLE__
+    #include <sys/types.h> 
+    #include <sys/socket.h> 
+    #include <arpa/inet.h> 
+    #include <poll.h>
+    #include <netdb.h>
+    #include <unistd.h> 
+    #include <netinet/in.h>
+    #include <signal.h>
+#elif __WIN32__
+    #define poll WSAPOLL
+#endif
+
 #include "Server.h"
 #include <iostream>
-#include <netdb.h>
-#include <unistd.h> 
 #include <string.h> 
-#include <sys/types.h> 
-#include <sys/socket.h> 
-#include <arpa/inet.h> 
-#include <poll.h>
 #include <vector>
-#include <netinet/in.h>
-#include <signal.h>
 #include <string>
 #include "../Utils/InUtils.h"
 #include "helper.h"
-#include "function_unix/Keylog.h"
 #include <mutex>
 
 Server::~Server()
@@ -166,7 +170,7 @@ void Server::start()
                         std::cout << "New connection from " << getIpStr((sockaddr *)&remote_address)
                              << " on socket " << newfd << "\n";
                     }
-                } 
+                }
                 else if (pfd.fd == this->disfd) // receive discover message
                 {  
                     Request r;
@@ -186,15 +190,25 @@ void Server::start()
                             perror("send offer");
                         }
                     }
-                } 
+                }
                 else
                 {
                     Request buffer;
                     
                     if (recvRequest(pfd.fd, buffer, 0) == -1)
                     {
-                        pfds[i] = pfds.back();
-                        pfds.pop_back();
+                        int sockfd = pfd.fd;
+                        for (int i = 0; i < keylogfds.size(); ++i)
+                        {
+                            if (keylogfds[i] == sockfd)
+                            {
+                                keylogfds[i] = keylogfds.back();
+                                keylogfds.pop_back();
+                                break;
+                            }
+                        }
+                        this->pfds[i] = this->pfds.back();
+                        this->pfds.pop_back();
                         std::cerr << "Connection closed\n";
                     } 
                     else
