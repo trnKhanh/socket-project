@@ -336,21 +336,3 @@ int Client::dirTree(const char* pathName){
     cout << (char*) responseFromServer.data() << '\n';
     return 0;
 }
-
-int Client::disconnect(){
-    Request requestToServer(DISCONNECT_REQUEST, 0, NULL);
-    int status = sendRequest(this->sockfd, requestToServer, 0);
-    if(status == SOCKET_ERROR)
-        return SOCKET_ERROR;
-
-    Response responseFromServer;
-    status = recvResponse(this->sockfd, responseFromServer, 0);
-    if(status == SOCKET_ERROR)
-        return SOCKET_ERROR;
-
-    if(responseFromServer.errCode() == FAIL_CODE)
-        return -1;
-
-    cout << "Client: Disconnecting...\n";
-    return 0;
-}

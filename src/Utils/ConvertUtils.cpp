@@ -60,15 +60,3 @@ void string_to_listchar(char*& res, string s){
         res[i] = s[i];
     res[sz] = '\0';
 }
-
-// get key press from DWORD
-pair <string, bool> changeToKeyPress(DWORD dwKeyCode){
-    // Convert the key code to scan code
-    DWORD dwScanCode = MapVirtualKey(dwKeyCode, MAPVK_VK_TO_VSC);
-
-    // Get the key name text
-    CHAR szKeyName[256];
-    if (GetKeyNameText(dwScanCode << 16, szKeyName, sizeof(szKeyName) / sizeof(WCHAR)) != 0) 
-        return {szKeyName, true};
-    return {szKeyName, false};
-}

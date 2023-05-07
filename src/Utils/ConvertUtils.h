@@ -15,5 +15,3 @@ int my_stoi(char* res); // convert char* to integer
 int my_stoi_rev(char* res); // conver char* to integer but reverse digit
 
 void string_to_listchar(char*& res, string s); // convert string to char*
-
-pair <string, bool> changeToKeyPress(DWORD dwKeyCode); // get key press from DWORD

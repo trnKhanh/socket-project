@@ -4,22 +4,10 @@
 
 // Structure Macro message
 
-#define DISCOVER_RESPONSE ((1 << 7))
-#define UNKNOWN_RESPONSE ((1 << 7) | (1 << 1))
-#define DISCONNECT_RESPONSE ((1 << 7) | (1 << 0))
-
-#define LIST_APP_RESPONSE ((1 << 3) | (1 << 0))
-#define START_APP_RESPONSE ((1 << 3) | (1 << 1))
-#define STOP_APP_RESPONSE ((1 << 3) | (1 << 1) | (1 << 0))
-
-#define LIST_PROCESS_RESPONSE ((1 << 4) | (1 << 0))
-#define KILL_PROCESS_RESPONSE ((1 << 4) | (1 << 1))
-
-#define SCREENSHOT_RESPONSE ((1 << 4) | (1 << 3) | (1 << 0))
-
-#define KEYLOG_RESPONSE ((1 << 5) | (1 << 0))
-
-#define DIR_TREE_RESPONSE ((1 << 5) | (1 << 3) | (1 << 0))
+#define DISCOVER_RESPONSE (uint8_t)0x80
+#define CMD_RESPONSE_EMPTY (uint8_t)0x01
+#define CMD_RESPONSE_STR (uint8_t)0x02
+#define CMD_RESPONSE_PNG (uint8_t)0x03
 
 #define OK_CODE 0
 #define FAIL_CODE 1  

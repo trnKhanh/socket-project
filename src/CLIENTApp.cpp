@@ -42,7 +42,7 @@ int main(){
                 c->dirTree(pathName.c_str()); 
                 break; 
             }
-            case 8: c->disconnect(); is_exit = true; break; // done
+            case 8: is_exit = true; break; // done
             default:
                 cout << "Option isn't available.\n";
         }

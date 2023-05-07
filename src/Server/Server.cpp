@@ -1,14 +1,6 @@
 #include "Server.h"
 
 #include <string.h> 
-#include <sys/types.h> 
-#include <signal.h>
-#include <psapi.h>
-#include <filesystem>
-#include <tlhelp32.h>
-#include <sstream>
-#include <fstream>
-#include <gdiplus.h> //screenshot
 #include <windows.h>
 #include <iostream>
 
@@ -18,17 +10,14 @@
 #include "../Message/Request.h"
 #include "../Message/Response.h"
 
-using std::cin;
-using std::cout;
-using std::cerr;
-using std::stringstream;
-using std::ifstream;
-using std::ios;
-
-using namespace Gdiplus;
+#include "function_Windows/AppCMD.h"
+#include "function_Windows/KeyLog.h"
+#include "function_Windows/ListDirTree.h"
+#include "function_Windows/ListProcesses.h"
+#include "function_Windows/Screenshot.h"
 
 Server::~Server(){
-    cout << "Server closed." << "\n";
+    std::cout << "Server closed." << "\n";
     closesocket(this->listener);
     closesocket(this->disfd);
 }
@@ -39,22 +28,22 @@ Server::Server(const char* port){
     int retCode = WSAStartup(wVersionRequested, &wsaData);
 
     if (retCode != 0)
-        cout << "Startup failed: " << retCode << "\n";
+        std::cout << "Startup failed: " << retCode << "\n";
         
-    cout << "Return Code: " << retCode << "\n";
-    cout << "Version Used: " << (int) LOBYTE(wsaData.wVersion) << "." << (int) HIBYTE(wsaData.wVersion) << "\n";
-    cout << "Version Supported: " << (int) LOBYTE(wsaData.wHighVersion) << "." << (int) HIBYTE(wsaData.wHighVersion) << "\n";
-    cout << "Implementation: " << wsaData.szDescription << "\n";
-    cout << "System Status: " << wsaData.szSystemStatus << "\n";
-    cout << "\n";
+    std::cout << "Return Code: " << retCode << "\n";
+    std::cout << "Version Used: " << (int) LOBYTE(wsaData.wVersion) << "." << (int) HIBYTE(wsaData.wVersion) << "\n";
+    std::cout << "Version Supported: " << (int) LOBYTE(wsaData.wHighVersion) << "." << (int) HIBYTE(wsaData.wHighVersion) << "\n";
+    std::cout << "Implementation: " << wsaData.szDescription << "\n";
+    std::cout << "System Status: " << wsaData.szSystemStatus << "\n";
+    std::cout << "\n";
 
     if(LOBYTE(wsaData.wVersion) != LOBYTE(wVersionRequested) || HIBYTE(wsaData.wVersion) != HIBYTE(wVersionRequested)){
-        cout << "Supported Version is too low.\n";
+        std::cout << "Supported Version is too low.\n";
         WSACleanup();
         exit(0);
     }
 
-    cout << "WSAStartup sucess.\n\n";
+    std::cout << "WSAStartup sucess.\n\n";
         
     int status;
     int yes = 1;
@@ -66,7 +55,7 @@ Server::Server(const char* port){
 
     status = getaddrinfo(NULL, port, &hints, &res);
     if (status == -1){
-        cerr << "getaddrinfo: " << gai_strerror(status) << "\n";
+        std::cerr << "getaddrinfo: " << gai_strerror(status) << "\n";
         exit(1);
     }
 
@@ -74,33 +63,33 @@ Server::Server(const char* port){
     for (p = res; p != NULL; p = p->ai_next){
         this->listener = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
         if (this->listener == INVALID_SOCKET){
-            cerr << "Server: socket\n";
+            std::cerr << "Server: socket\n";
             continue;
         }
         if (setsockopt(this->listener, SOL_SOCKET, SO_REUSEADDR, (char*)&yes, sizeof(int)) == -1) {
-            cerr << "Server: setsockopt\n";
+            std::cerr << "Server: setsockopt\n";
             exit(1); 
         }
         if (bind(this->listener, p->ai_addr, p->ai_addrlen) == -1){
-            cerr << "Server: bind\n";
+            std::cerr << "Server: bind\n";
             closesocket(this->listener);
             continue;
         }
         break;
     }
         
-    cout << "Server started on " << getIpStr(p->ai_addr) << "::" 
+    std::cout << "Server started on " << getIpStr(p->ai_addr) << "::" 
         << ntohs(((sockaddr_in *)p->ai_addr)->sin_port) << "\n";
         
     freeaddrinfo(res);
     if (p == NULL){
-        cerr << "Server: fail to bind\n";
+        std::cerr << "Server: fail to bind\n";
         exit(1);
     }
 
     status = listen(this->listener, BACKLOG);
     if (status == -1){
-        cerr << "Server: listen\n";
+        std::cerr << "Server: listen\n";
         exit(1);
     }
 
@@ -115,34 +104,34 @@ Server::Server(const char* port){
 
     status = getaddrinfo(NULL, port, &hints, &res);
     if (status == SOCKET_ERROR){
-        cerr << "getaddrinfo: " << gai_strerror(status) << "\n";
+        std::cerr << "getaddrinfo: " << gai_strerror(status) << "\n";
         exit(1);
     }
 
     for (p = res; p != NULL; p = p->ai_next){
         this->disfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
         if (this->disfd == INVALID_SOCKET){
-            cerr << "Server: socket\n";
+            std::cerr << "Server: socket\n";
             continue;
         }
         if (setsockopt(this->disfd, SOL_SOCKET, SO_REUSEADDR, (char*) &yes, sizeof(int)) == SOCKET_ERROR) {
-            cerr << "Server: setsockopt";
+            std::cerr << "Server: setsockopt";
             exit(1); 
         }
         if (bind(this->disfd, p->ai_addr, p->ai_addrlen) == SOCKET_ERROR){
-            cerr << "Server: bind\n";
+            std::cerr << "Server: bind\n";
             closesocket(this->disfd);
             continue;
         }
         break;
     }
         
-    cout << "Discover server started on " << getIpStr(p->ai_addr) << "::"; 
-    cout << ntohs(((sockaddr_in *)p->ai_addr)->sin_port) << "\n";
+    std::cout << "Discover server started on " << getIpStr(p->ai_addr) << "::"; 
+    std::cout << ntohs(((sockaddr_in *)p->ai_addr)->sin_port) << "\n";
         
     freeaddrinfo(res);
     if (p == NULL){
-        cerr << "Server: fail to bind\n";
+        std::cerr << "Server: fail to bind\n";
         exit(1);
     }
 
@@ -157,12 +146,12 @@ void Server::start(){
     sockaddr_storage remote_address;
     socklen_t addrlen;
 
-    cout << "Server is running...\n";
+    std::cout << "Server is running...\n";
     char buffer[256];
     while (true){
         int poll_count = WSAPoll(&pfds[0], pfds.size(), -1); // wait util events occur
         if (poll_count == -1){
-            cerr << "poll\n";
+            std::cerr << "poll\n";
             exit(1);
         }
 
@@ -174,14 +163,14 @@ void Server::start(){
                     addrlen = sizeof(remote_address);
                     newfd = accept(listener, (sockaddr *)&remote_address, &addrlen);
                     if (newfd == -1){
-                        cerr << "accept\n";
+                        std::cerr << "accept\n";
                     } 
                     else{
                         pfds.emplace_back();
                         pfds.back().fd = newfd;
                         pfds.back().events = POLLIN;
                         
-                        cout << "New connection from " << getIpStr((sockaddr *)&remote_address)
+                        std::cout << "New connection from " << getIpStr((sockaddr *)&remote_address)
                              << " on socket " << newfd << "\n";
                     }
                 } 
@@ -190,7 +179,7 @@ void Server::start(){
                     addrlen = sizeof(remote_address);
                     recvfromRequest(disfd, req, 0, (sockaddr*)&remote_address, &addrlen);
                     if (req.type() == DISCOVER_REQUEST){
-                        cout << "Receive discover message from " << getIpStr((sockaddr *)&remote_address) << "::"
+                        std::cout << "Receive discover message from " << getIpStr((sockaddr *)&remote_address) << "::"
                         << ntohs(((sockaddr_in *)&remote_address)->sin_port) << '\n';
                         Response msg(DISCOVER_RESPONSE, OK_CODE, 0, NULL);
                         
@@ -206,7 +195,7 @@ void Server::start(){
                     int status = recvRequest(pfd.fd, requestFromClient, 0);
 
                     if(status == -1){
-                        cerr << "Connection closed\n";
+                        std::cerr << "Connection closed\n";
                         break;
                     }
 
@@ -224,14 +213,14 @@ void Server::start(){
                         responseToClient = this->keyLog();
                     else if (requestFromClient.type() == DIR_TREE_REQUEST)
                         responseToClient = this->dirTree((char*)requestFromClient.data());
-                    else if (requestFromClient.type() == DISCONNECT_REQUEST)
-                        responseToClient = this->disconnect();
-                    else 
-                        responseToClient = Response(UNKNOWN_RESPONSE, OK_CODE, 0, NULL);
+                    else {
+                        std::cerr << "Invalid request received on socket " << pfd.fd << std::endl;
+                        continue;
+                    }
 
                     status = sendResponse(pfd.fd, responseToClient, 0);
                     if(status == SOCKET_ERROR)
-                        cerr << "Can't send response.\n";
+                        std::cerr << "Can't send response.\n";
                 }
             }
         }
@@ -239,175 +228,70 @@ void Server::start(){
 }
 
 Response Server::listApp(){
-    cout << "Server: Received listing installed applications instruction.\n";
-
+    std::string buffer;
     uint32_t errCode;
-    string result;
-
-    // Run the WMIC command to retrieve the list of installed applications
-    FILE* fp = _popen("WMIC /Node:localhost product get name,version", "r");
-    if(fp == NULL){
+    if (listAppHelper(buffer) == -1)
+    {
+        buffer.clear();
         errCode = FAIL_CODE;
-        cerr << "Error: Failed to excute command\n";
     }
-    else{
-        errCode = OK_CODE;
-        stringstream builder;
-        char buffer[1024];
-        // Read the output of the WMIC command and send it to the client over the socket
+    else errCode = OK_CODE;
 
-        int i = 0;
-        while (fgets(buffer, sizeof(buffer), fp) != NULL) 
-            builder << buffer;
-        result = builder.str();
-        _pclose(fp);
-    }
-
-    cout << "Server: All installed applications are listed.\n";
-    return Response(LIST_APP_RESPONSE, errCode, result.size() + 1, (void *)result.c_str());
+    return Response(CMD_RESPONSE_STR, errCode, buffer.size() + 1, (void *)buffer.c_str());
 }
 
 Response Server::startApp(const char* appName){
-    stringstream os;
-    os << "start " << appName;
-    string cmd = os.str();
-    if(system(cmd.c_str()) == 0)
-        return Response(START_APP_RESPONSE, OK_CODE, 0, NULL);
-    return Response(START_APP_RESPONSE, FAIL_CODE, 0, NULL);
+    uint32_t errCode;
+    if (startAppHelper(appName) == -1)
+    {
+        errCode = FAIL_CODE;
+    }
+    else errCode = OK_CODE;
+
+    return Response(CMD_RESPONSE_EMPTY, errCode, 0, NULL);
 }
 
 Response Server::stopApp(const char* appName){
-    stringstream stream;
-    stream << appName << ".exe";
-    string fullappName = stream.str();
-    const char* processName = fullappName.c_str();
-
-    // Get the process ID of the running process to stop
-    DWORD dwProcessId = GetProcessIdByName(processName); // Replace with the actual process ID
-
-    // Open the process
-    HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, FALSE, dwProcessId);
-    if (hProcess == NULL) {
-        cerr << "Error: Failed to open process.\n";
-        return Response(START_APP_RESPONSE, FAIL_CODE, 0, NULL);                     
+    uint32_t errCode;
+    if (stopAppHelper(appName) == -1){
+        errCode = FAIL_CODE;
     }
+    else errCode = OK_CODE;
 
-    // Terminate the process
-    if (!TerminateProcess(hProcess, 0)) {
-        cerr << "Error: Failed to terminate process.\n";
-        CloseHandle(hProcess);
-        return Response(START_APP_RESPONSE, FAIL_CODE, 0, NULL);  
-    }
-    // Close the process handle
-    CloseHandle(hProcess);
-    return Response(START_APP_RESPONSE, OK_CODE, 0, NULL);  
+    return Response(CMD_RESPONSE_EMPTY, errCode, 0, NULL);  
 }
 
 Response Server::listProcess(){
-    cout << "Server: Received listing processing instruction.\n";
-    stringstream builder;
-    string result;
-
-    DWORD aProcesses[1024], cbNeeded, cProcesses;
-    if (EnumProcesses(aProcesses, sizeof(aProcesses), &cbNeeded)){
-        // Calculate how many process identifiers were returned
-        cProcesses = cbNeeded / sizeof(DWORD);
-        // Get the process names and send them to the client
-
-        builder << "Running Process (" << cProcesses << "): \n";
-        for (DWORD i = 0; i < cProcesses; i++) {
-            HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, aProcesses[i]);
-            if (hProcess != NULL) {
-                char procName[MAX_PATH];
-                if (GetModuleBaseNameA(hProcess, NULL, procName, sizeof(procName)) > 0) 
-                    builder << procName << '\n';
-            CloseHandle(hProcess);
-            }
-        }
+    std::string buffer;
+    int status = listProcessesStrHelper(buffer);
+    uint32_t errCode;
+    if (status == -1){
+        errCode = FAIL_CODE;
+        buffer.clear();
     }
+    else errCode = OK_CODE;
 
-    uint32_t errCode = OK_CODE;
-    result = builder.str();
-
-    cout << "Server: All processes are listed.\n";
-    return Response(LIST_PROCESS_RESPONSE, errCode, result.size() + 1, (void *)result.c_str());
+    return Response(CMD_RESPONSE_STR, errCode, buffer.size() + 1, (void *)buffer.c_str());
 }
 
 Response Server::screenShot(){
-    cout << "Server: Received screen capture instruction.\n";
+    std::vector<char> buffer;
+    uint32_t errCode;
+    if (screenshotHelper(buffer))
+        errCode = FAIL_CODE;
+    else errCode = OK_CODE;
 
-    GdiplusStartupInput gdiplusStartupInput;
-    ULONG_PTR gdiplusToken;
-    GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
-
-    HDC hdcScreen = GetDC(NULL);
-    HDC hdcMem = CreateCompatibleDC(hdcScreen);
-
-    DEVMODE dm;
-    dm.dmSize = sizeof(dm);
-
-    int screenWidth, screenHeight;
-
-    if (EnumDisplaySettings(nullptr, ENUM_CURRENT_SETTINGS, &dm)) {
-        screenWidth = dm.dmPelsWidth;
-        screenHeight = dm.dmPelsHeight;
-    }
-    else{
-        cerr << "Error: Can't get screen resolution.\n";
-        return Response(SCREENSHOT_RESPONSE, FAIL_CODE, 0, NULL);
-    }
-
-    HBITMAP hBitmap = CreateCompatibleBitmap(hdcScreen, screenWidth, screenHeight);
-
-    SelectObject(hdcMem, hBitmap);
-    BitBlt(hdcMem, 0, 0, screenWidth, screenHeight, hdcScreen, 0, 0, SRCCOPY);
-
-    CLSID clsid;
-    int status = GetEncoderClsid(L"image/png", &clsid);
-    if(status == -1){
-        cerr << "Server: Can't capture screen.\n";
-
-        DeleteDC(hdcMem);
-        ReleaseDC(NULL, hdcScreen);
-
-        GdiplusShutdown(gdiplusToken);
-        return Response(SCREENSHOT_RESPONSE, FAIL_CODE, 0, NULL); 
-    }
-
-    Bitmap bmp(hBitmap, (HPALETTE)0);
-    bmp.Save(L"screenshot.png", &clsid, NULL);
-
-    DeleteObject(hBitmap);
-    DeleteDC(hdcMem);
-    ReleaseDC(NULL, hdcScreen);
-
-    //GdiplusShutdown(gdiplusToken);
-
-    ifstream fi("screenshot.png", ios::binary);
-    if(fi.fail()){
-        cerr << "Server: Can't open file screenshot.png\n";
-        return Response(SCREENSHOT_RESPONSE, FAIL_CODE, 0, NULL);
-    }
-
-    vector <char> buffer = vector<char>(std::istreambuf_iterator<char>(fi), {});
-
-    fi.close();
-    status = remove("screenshot.png");
-    if(status)
-        cerr << "Server: Can't delete file screenshot png or file not exits\n";
-
-    cout << "Server: Sent screenshot.png to client.\n";
-    return Response(SCREENSHOT_RESPONSE, OK_CODE, buffer.size(), buffer.data());  
+    return Response(CMD_RESPONSE_PNG, errCode, buffer.size(), buffer.data());
 }
 
 Response Server::keyLog(){
-    cout << "Server: Receive KeyLog instruction.\n";
-    cout << "Server: Start KeyLog.\n";
+    std::cout << "Server: Receive KeyLog instruction.\n";
+    std::cout << "Server: Start KeyLog.\n";
     // Init hook
     HHOOK hHook = SetWindowsHookEx(WH_KEYBOARD_LL, KeyboardHookProc, NULL, 0);
     if (hHook == NULL){
-        cerr << "Error: Failed to set keyboard hook.\n";
-        return Response(KEYLOG_RESPONSE, FAIL_CODE, 0, NULL);
+        std::cerr << "Error: Failed to set keyboard hook.\n";
+        return Response(CMD_RESPONSE_EMPTY, FAIL_CODE, 0, NULL);
     }
 
     // Loop waiting for event
@@ -419,124 +303,19 @@ Response Server::keyLog(){
     
     // Destroy hook
     UnhookWindowsHookEx(hHook);
-    return Response(KEYLOG_RESPONSE, OK_CODE, 0, NULL); 
+    return Response(CMD_RESPONSE_EMPTY, OK_CODE, 0, NULL); 
 }
     
 Response Server::dirTree(const char* pathName){
-    cout << "Server: Received listing directory tree instruction.\n";
-    string result = listDirectoryTree(pathName, 0);
-
-    cout << "Server: Listed directoried tree.\n";
-    return Response(DIR_TREE_RESPONSE, OK_CODE, result.size() + 1, (void*)result.c_str());
-}
-
-Response Server::disconnect(){
-    cout << "Server: Received disconnect instruction.\n";
-    cout << "Server: Client disconnected.\n";
-
-    return Response(DISCONNECT_RESPONSE, OK_CODE, 0, NULL);
-}
-
-// Function to get the PID of a process given its name
-DWORD GetProcessIdByName(const char* processName) {
-    stringstream stream;
-    stream << processName;
-    string processName1 = stream.str();
-    DWORD processId = 0;
-
-    HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-    if (hSnapshot != INVALID_HANDLE_VALUE) {
-        PROCESSENTRY32 processEntry = { 0 };
-        processEntry.dwSize = sizeof(PROCESSENTRY32);
-
-        if (Process32First(hSnapshot, &processEntry)) {
-            do {
-                string currentProcessName((char*)processEntry.szExeFile);
-                if (currentProcessName == processName1) {
-                    processId = processEntry.th32ProcessID;
-                    break;
-                }
-            } while (Process32Next(hSnapshot, &processEntry));
-        }
-
-        CloseHandle(hSnapshot);
+    std::cout << "Processing list directory tree rooted at " << pathName << std::endl;
+    std::string buffer;
+    int status = listDirTreeHelper(pathName, buffer);
+    uint32_t errCode;
+    if (status == -1){
+        errCode = FAIL_CODE;
+        buffer.clear();
     }
+    else errCode = OK_CODE;
 
-    return processId;
-}
-
-string listDirectoryTree(const char* path, int indent){
-    stringstream stream;
-    WIN32_FIND_DATAA fd;
-    HANDLE hFind = FindFirstFileA((string(path) + "\\*").c_str(), &fd);
-
-    if (hFind != INVALID_HANDLE_VALUE){
-        do{
-            if (strcmp(fd.cFileName, ".") != 0 && strcmp(fd.cFileName, "..") != 0){
-                for (int i = 0; i < indent; i++)
-                    stream << "  ";
-
-                if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY){
-                    stream << "[+] " << fd.cFileName << '\n';
-                    stream << listDirectoryTree((string(path) + "\\" + fd.cFileName).c_str(), indent + 1);
-                }
-                else{
-                    stream << "    " << fd.cFileName << '\n';
-                }
-            }
-        } while (FindNextFileA(hFind, &fd));
-
-        FindClose(hFind);
-    }
-
-    string result = stream.str();
-    return result;
-}
-
-int GetEncoderClsid(const WCHAR* format, CLSID* pClsid){
-    UINT  num = 0;  // number of image encoders
-    UINT  size = 0;  // size of the image encoder array in bytes
-
-    ImageCodecInfo* pImageCodecInfo = NULL;
-
-    GetImageEncodersSize(&num, &size);
-    if(size == 0)
-        return -1;  // Failure
-
-    pImageCodecInfo = (ImageCodecInfo*)(malloc(size));
-    if(pImageCodecInfo == NULL)
-        return -1;  // Failure
-
-    GetImageEncoders(num, size, pImageCodecInfo);
-
-    for(UINT j = 0; j < num; ++j){
-        if(wcscmp(pImageCodecInfo[j].MimeType, format) == 0){
-            *pClsid = pImageCodecInfo[j].Clsid;
-            free(pImageCodecInfo);
-            return j;  // Success
-        }
-    }
-
-    free(pImageCodecInfo);
-    return -1;  // Failure
-}
-
-LRESULT CALLBACK KeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam){
-    if (nCode == HC_ACTION){
-        KBDLLHOOKSTRUCT* pKeyboardStruct = (KBDLLHOOKSTRUCT*)lParam;
-        DWORD vkCode = pKeyboardStruct->vkCode;
-
-        if (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN){
-            // Process event press key
-            auto res = changeToKeyPress(vkCode);
-            cout << "Key pressed: ";
-            if(res.second == true)
-                cout << res.first  << '\n';
-            else
-                cout << "(DWORD)" << vkCode << '\n';
-        }
-    }
-
-    // Call next hook
-    return CallNextHookEx(NULL, nCode, wParam, lParam);
+    return Response(CMD_RESPONSE_STR, errCode, buffer.size() + 1, (void *)buffer.c_str());
 }
