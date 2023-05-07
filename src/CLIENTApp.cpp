@@ -15,7 +15,7 @@ int main(){
         bool is_exit = false;
         switch(type){
             case 1: c->listApp(); break; // done
-            case 2:{
+            case 2:{ // done
                 string appName;
                 cout << "Application name: ";
                 cin.get();
@@ -33,10 +33,16 @@ int main(){
             }
             case 4: c->listProcesss(); break; // done
             case 5: c->screenShot(); break; // done
-            case 6: c->startKeylog(); break;
-            case 7: c->stopKeylog(); break;
-            case 8: c->dirTree(); break; // done
-            case 9: c->disconnect(); is_exit = true; break; // done
+            case 6: c->keyLog(); break;
+            case 7: { // done
+                string pathName;
+                cout << "Path Name: ";
+                cin.get();
+                getline(cin, pathName);
+                c->dirTree(pathName.c_str()); 
+                break; 
+            }
+            case 8: c->disconnect(); is_exit = true; break; // done
             default:
                 cout << "Option isn't available.\n";
         }
@@ -47,16 +53,15 @@ int main(){
 }
 
 int menu(){
-    cout << "Choose instruction:\n";
+    cout << "\nChoose instruction:\n";
     cout << "1. List App.\n";
     cout << "2. Start App.\n";
     cout << "3. Stop App.\n";
     cout << "4. List Process.\n";
     cout << "5. ScreenShot.\n";
-    cout << "6. Start Keylog.\n";
-    cout << "7. Stop Keylog.\n";
-    cout << "8. Dir tree.\n";
-    cout << "9. Exit.\n";
+    cout << "6. Keylog.\n";
+    cout << "7. Dir tree.\n";
+    cout << "8. Exit.\n";
     int type;
     cin >> type;
     return type;

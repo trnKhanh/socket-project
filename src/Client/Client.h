@@ -28,7 +28,7 @@ public:
 
     int keyLog();
 
-    int dirTree();
+    int dirTree(const char* pathName);
 
     int disconnect(); 
 };

