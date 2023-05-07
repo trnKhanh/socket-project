@@ -8,9 +8,6 @@
 
 #include "../Message/Response.h"
 
-#define SERVER_PORT "6910"
-#define BACKLOG 10
-
 using std::vector;
 using std::string;
 

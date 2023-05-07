@@ -1,7 +1,10 @@
 #pragma once
 #include <iostream>
-#include <WinSock2.h>
-#include <WS2tcpip.h>
+
+#ifdef _WIN32
+    #include <WinSock2.h>
+    #include <WS2tcpip.h>
+#endif
 
 int sendAll(SOCKET sockfd, const void *msg, size_t len, int flag);
 int recvAll(SOCKET sockfd, void *msg, size_t len, int flag);

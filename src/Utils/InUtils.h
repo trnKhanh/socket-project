@@ -1,8 +1,11 @@
 #pragma once
-#include <WinSock2.h>
+
 #include <string>
 
-using std::string;
+#ifdef _WIN32
+    #include <WinSock2.h>
+#endif
+
 
 void *getInAddress(sockaddr *addr);
-string getIpStr(sockaddr *addr);
+std::string getIpStr(sockaddr *addr);

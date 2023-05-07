@@ -3,9 +3,7 @@
 #include <string>
 
 #include "WinSock2.h"
-
-#define SERVER_PORT "6910"
-#define CLIENT_PORT "6911"
+#include "../GlobalConstant.h"
 
 using std::vector;
 using std::string;

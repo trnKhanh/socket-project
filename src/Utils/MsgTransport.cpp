@@ -1,5 +1,8 @@
 #include "MsgTransport.h"
-#include "WinSock2.h"
+
+#ifdef _WIN32
+    #include "WinSock2.h"
+#endif
 
 //TCP
 int sendAll(SOCKET sockfd, const void *msg, size_t len, int flag){

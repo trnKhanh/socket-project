@@ -1,20 +1,24 @@
 #include "Server.h"
 
-#include <string.h> 
-#include <windows.h>
+#include <string.h>
 #include <iostream>
 
+#include "../GlobalConstant.h"
 #include "../Utils/InUtils.h"
 #include "../Utils/ConvertUtils.h"
 #include "../Utils/MsgTransport.h"
 #include "../Message/Request.h"
 #include "../Message/Response.h"
 
-#include "function_Windows/AppCMD.h"
-#include "function_Windows/KeyLog.h"
-#include "function_Windows/ListDirTree.h"
-#include "function_Windows/ListProcesses.h"
-#include "function_Windows/Screenshot.h"
+#ifdef _WIN32
+    #include <Windows.h>
+
+    #include "function_Windows/AppCMD.h"
+    #include "function_Windows/KeyLog.h"
+    #include "function_Windows/ListDirTree.h"
+    #include "function_Windows/ListProcesses.h"
+    #include "function_Windows/Screenshot.h"
+#endif
 
 Server::~Server(){
     std::cout << "Server closed." << "\n";

@@ -2,7 +2,6 @@
 
 #include <stdint.h>
 #include <string>
-#include <Windows.h>
 
 using std::string;
 using std::pair;

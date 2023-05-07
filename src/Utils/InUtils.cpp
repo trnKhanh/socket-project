@@ -1,6 +1,9 @@
 #include "InUtils.h"
-#include <ws2ipdef.h>
-#include "WS2tcpip.h"
+
+#ifdef _WIN32
+    #include <ws2ipdef.h>
+    #include <WS2tcpip.h>
+#endif
 
 void *getInAddress(sockaddr *addr){
     //IPv4
@@ -10,9 +13,9 @@ void *getInAddress(sockaddr *addr){
     return &(((sockaddr_in6*)addr)->sin6_addr);
 }
 
-string getIpStr(sockaddr *addr){
+std::string getIpStr(sockaddr *addr){
     char buffer[INET6_ADDRSTRLEN];
     inet_ntop(addr->sa_family, getInAddress(addr), buffer, sizeof(buffer));
-    string res(buffer);
+    std::string res(buffer);
     return res;
 }
