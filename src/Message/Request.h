@@ -4,23 +4,22 @@
 #include <WS2tcpip.h>
 
 // Structure Macro message
+#define DISCOVER_REQUEST (uint8_t)0x80
+#define NOTCMD_REQUEST (uint8_t)0x00
 
-#define DISCOVER_REQUEST ((1 << 7))
-#define DISCONNECT_REQUEST ((1 << 7) | (1 << 0))
-#define UNKNOWN_REQUEST ((1 << 7) | (1 << 1))
+#define LIST_APP_REQUEST (uint8_t)0x09
+#define START_APP_REQUEST (uint8_t)0x0a
+#define STOP_APP_REQUEST (uint8_t)0x0b
 
-#define LIST_APP_REQUEST ((1 << 3) | (1 << 0))
-#define START_APP_REQUEST ((1 << 3) | (1 << 1))
-#define STOP_APP_REQUEST ((1 << 3) | (1 << 1) | (1 << 0))
+#define LIST_PROC_REQUEST (uint8_t)0x11
+#define KILL_PROC_REQUEST (uint8_t)0x12
 
-#define LIST_PROCESS_REQUEST ((1 << 4) | (1 << 0))
-#define KILL_PROCESS_REQUEST ((1 << 4) | (1 << 1))
+#define SCREENSHOT_REQUEST (uint8_t)0x19
 
-#define SCREENSHOT_REQUEST ((1 << 4) | (1 << 3) | (1 << 0))
+#define START_KEYLOG_REQUEST (uint8_t)0x21
+#define STOP_KEYLOG_REQUEST (uint8_t)0x22
 
-#define KEYLOG_REQUEST ((1 << 5) | (1 << 0))
-
-#define DIR_TREE_REQUEST ((1 << 5) | (1 << 3) | (1 << 0))
+#define DIR_TREE_REQUEST (uint8_t)0x29
 
 class Request {
     struct {

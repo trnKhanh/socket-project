@@ -1,4 +1,5 @@
 #include "Client/Client.h"
+
 #include <iostream>
 #include <string>
 
@@ -33,8 +34,9 @@ int main(){
             }
             case 4: c->listProcesss(); break; // done
             case 5: c->screenShot(); break; // done
-            case 6: c->keyLog(); break;
-            case 7: { // done
+            case 6: c->startKeyLog(); break;
+            case 7: c->stopKeyLog(); break;
+            case 8: { // done
                 string pathName;
                 cout << "Path Name: ";
                 cin.get();
@@ -42,7 +44,7 @@ int main(){
                 c->dirTree(pathName.c_str()); 
                 break; 
             }
-            case 8: is_exit = true; break; // done
+            case 9: is_exit = true; break; // done
             default:
                 cout << "Option isn't available.\n";
         }
@@ -59,9 +61,10 @@ int menu(){
     cout << "3. Stop App.\n";
     cout << "4. List Process.\n";
     cout << "5. ScreenShot.\n";
-    cout << "6. Keylog.\n";
-    cout << "7. Dir tree.\n";
-    cout << "8. Exit.\n";
+    cout << "6. Start Keylog.\n";
+    cout << "7. Stop Keylog.\n";
+    cout << "8. Dir tree.\n";
+    cout << "9. Exit.\n";
     int type;
     cin >> type;
     return type;

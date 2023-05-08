@@ -1,20 +1,28 @@
 #pragma once
 #include <vector>
 #include <string>
+#include <thread>
+#include <sstream>
+#include <fstream>
 
-#include "WinSock2.h"
 #include "../GlobalConstant.h"
 
-using std::vector;
-using std::string;
+#ifdef _WIN32
+    #include "WinSock2.h"
+#endif
 
 class Client {
+    std::ofstream _keylogFile;
     SOCKET sockfd;
+    SOCKET _keylogfd;
+    std::string _serverName;
+    std::thread _keylogThread;
+    void recvKeylog();
 public:
     Client();
     ~Client();
 
-    int discover(vector <string> &servers); // find all server can connect
+    int discover(std::vector <std::string> &servers); // find all server can connect
 
     int listApp();  
     int startApp(const char *appName);
@@ -23,8 +31,9 @@ public:
     int listProcesss();
 
     int screenShot();
-
-    int keyLog();
+    
+    int startKeyLog();
+    int stopKeyLog();
 
     int dirTree(const char* pathName);
 };
