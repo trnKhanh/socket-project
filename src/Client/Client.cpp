@@ -1,7 +1,5 @@
 #include "Client.h"
 
-#include <WinSock2.h>
-#include <Windows.h>
 #include <cstring>
 #include <iostream>
 #include <filesystem>
@@ -37,19 +35,24 @@ Client::Client(){
         std::cout << "WSAStartup sucess.\n\n";
     #endif
 
+    int idServer; 
     std::vector <std::string> servers;
-    retCode = this->discover(servers);
-    
-    if (retCode == -1) 
-        exit(1);
 
-    std::cout << "Found following server:\n";
-    for (auto server: servers)
-        std::cout << server << "\n";
+    do{
+        retCode = this->discover(servers);
+        if (retCode == -1) 
+            exit(1);
+        std::cout << "Found following server:\n";
+        for(int i = 0; i < servers.size(); ++i)
+            std::cout << i + 1 << ". " << servers[i] << "\n";
+        std::cout << servers.size() + 1 << ". " << "Retry.\n";
+        do{
+            std::cout << "Choose server to connect: ";
+            std::cin >> idServer;
+        }while(idServer < 1 || idServer > servers.size() + 1) ;
+    }while(idServer == servers.size() + 1);
 
-    std::cout << "Choose server to connect: ";
-    string name = servers[0];
-    std::cin >> name;
+    this->_serverName = servers[idServer - 1];
 
     addrinfo hints, *servinfo;
     int status, yes = 1;
@@ -57,7 +60,7 @@ Client::Client(){
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
-    if ((status = getaddrinfo(name.c_str(), SERVER_PORT, &hints, &servinfo)) != 0){
+    if ((status = getaddrinfo(this->_serverName.c_str(), SERVER_PORT, &hints, &servinfo)) != 0){
         std::cerr << "Client: getaddrinfo " << gai_strerror(status) << "\n";
         exit(1);
     }
@@ -72,7 +75,7 @@ Client::Client(){
         int status = connect(this->sockfd, p->ai_addr, p->ai_addrlen);
         if (status == SOCKET_ERROR){
             std::cerr << "Client: connect\n";
-            closesocket(this->sockfd);
+            close(this->sockfd);
             continue;
         }
         break;
@@ -87,13 +90,16 @@ Client::Client(){
 }
 
 Client::~Client(){
-    closesocket(this->sockfd);
+    if(this->_keylogThread.joinable())
+        this->stopKeyLog();
+    close(this->sockfd);
     #ifdef _WIN32
         WSACleanup();
     #endif
 }
 
 int Client::discover(std::vector<std::string> &servers){
+    servers.clear();
     int status;
     SOCKET disfd;
     int yes = 1;
@@ -106,7 +112,7 @@ int Client::discover(std::vector<std::string> &servers){
     hints.ai_socktype = SOCK_DGRAM;
     hints.ai_flags = AI_PASSIVE;
 
-    status = getaddrinfo(NULL, CLIENT_PORT, &hints, &addr);
+    status = getaddrinfo(NULL, "0", &hints, &addr);
     if (status != 0){
         std::cerr << "Client: getaddrinfo: " << gai_strerror(status) << "\n";
         return -1;
@@ -131,14 +137,14 @@ int Client::discover(std::vector<std::string> &servers){
         if (status == SOCKET_ERROR){
             std::cerr << "Client: setsockopt\n";
             freeaddrinfo(addr);
-            closesocket(disfd);
+            close(disfd);
             return -1;
         }
 
         status = bind(disfd, p->ai_addr, p->ai_addrlen);
         if (status == SOCKET_ERROR){
             std::cerr << "Client: bind\n";
-            closesocket(disfd);
+            close(disfd);
             continue;
         }
         break;
@@ -179,7 +185,7 @@ int Client::discover(std::vector<std::string> &servers){
         int rv = WSAPoll(pfds, 1, 1000);
         if (rv == -1){
             std::cerr << "poll\n";
-            closesocket(disfd); 
+            close(disfd); 
             return -1;
         }
         if (rv == 0){ // time out
@@ -195,7 +201,7 @@ int Client::discover(std::vector<std::string> &servers){
         if (buffer.type() == DISCOVER_RESPONSE)
             servers.push_back(getIpStr((sockaddr*) &serverAddr));
     }
-    closesocket(disfd);
+    close(disfd);
     return 0;
 }
 
@@ -216,7 +222,7 @@ void Client::recvKeylog(){
         Response res;
         if (recvResponse(this->_keylogfd, res, 0))
         {
-            closesocket(this->_keylogfd);
+            close(this->_keylogfd);
             break;
         }
         this->_keylogFile << (char*) res.data() << std::flush;
@@ -362,17 +368,17 @@ int Client::startKeyLog(){
 
 
     if (sendRequest(this->_keylogfd, req, 0)){
-        closesocket(this->_keylogfd);
+        close(this->_keylogfd);
         return -1;
     }
     Response res;
     if (recvResponse(this->_keylogfd, res, 0)){
-        closesocket(this->_keylogfd);
+        close(this->_keylogfd);
         return -1;
     }
     if (res.errCode() == FAIL_CODE || res.type() != CMD_RESPONSE_EMPTY)
     {
-        closesocket(this->_keylogfd);
+        close(this->_keylogfd);
         return -1;
     }
     int cnt = 0;

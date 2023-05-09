@@ -11,20 +11,12 @@
 #include "../Message/Request.h"
 #include "../Message/Response.h"
 
-#ifdef _WIN32
-    #include <Windows.h>
-
-    #include "function_Windows/AppCMD.h"
-    #include "function_Windows/KeyLog.h"
-    #include "function_Windows/ListDirTree.h"
-    #include "function_Windows/ListProcesses.h"
-    #include "function_Windows/Screenshot.h"
-#endif
+#include "Helper.h"
 
 Server::~Server(){
     std::cout << "Server closed." << "\n";
-    closesocket(this->listener);
-    closesocket(this->disfd);
+    close(this->listener);
+    close(this->disfd);
     delete this->_keylog;
     #ifdef _WIN32
         WSACleanup();
@@ -56,7 +48,6 @@ Server::Server(const char* port){
         std::cout << "WSAStartup sucess.\n\n";
     #endif
     
-    // this->keyLogThread = std::thread(startKeyLogHelper);
     int status;
     int yes = 1;
     addrinfo hints, *res;
@@ -84,7 +75,7 @@ Server::Server(const char* port){
         }
         if (bind(this->listener, p->ai_addr, p->ai_addrlen) == -1){
             std::cerr << "Server: bind\n";
-            closesocket(this->listener);
+            close(this->listener);
             continue;
         }
         break;
@@ -105,7 +96,7 @@ Server::Server(const char* port){
         exit(1);
     }
 
-    this->pfds.emplace_back();
+    this->pfds.push_back(pollfd());
     this->pfds.back().fd = this->listener;
     this->pfds.back().events = POLLIN;
 
@@ -132,7 +123,7 @@ Server::Server(const char* port){
         }
         if (bind(this->disfd, p->ai_addr, p->ai_addrlen) == SOCKET_ERROR){
             std::cerr << "Server: bind\n";
-            closesocket(this->disfd);
+            close(this->disfd);
             continue;
         }
         break;
@@ -147,7 +138,7 @@ Server::Server(const char* port){
         exit(1);
     }
 
-    this->pfds.push_back(WSAPOLLFD());
+    this->pfds.push_back(pollfd());
     this->pfds.back().fd = this->disfd;
     this->pfds.back().events = POLLIN;
 }
@@ -161,7 +152,7 @@ void Server::start(){
     std::cout << "Server is running...\n";
     char buffer[256];
     while (true){
-        int poll_count = WSAPoll(&pfds[0], pfds.size(), -1); // wait util events occur
+        int poll_count = poll(&pfds[0], pfds.size(), -1); // wait util events occur
         if (poll_count == -1){
             std::cerr << "poll\n";
             exit(1);
@@ -178,7 +169,7 @@ void Server::start(){
                         std::cerr << "accept\n";
                     } 
                     else{
-                        pfds.emplace_back();
+                        pfds.push_back(pollfd());
                         pfds.back().fd = newfd;
                         pfds.back().events = POLLIN;
                         
@@ -236,7 +227,7 @@ void Server::start(){
                     if(status == SOCKET_ERROR)
                         std::cerr << "Can't send response.\n";
                     if(requestFromClient.type() == STOP_KEYLOG_REQUEST)
-                        closesocket(pfd.fd);
+                        close(pfd.fd);
                 }
             }
         }

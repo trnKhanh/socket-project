@@ -5,6 +5,6 @@ Socket Process:
  - Start App: Done
  - Stop App: Done
 2. List Processes: Done
-3. ScreenShot: Doneg
+3. ScreenShot: Done
 4. KeyLog: Done
 5. Directory tree: Done

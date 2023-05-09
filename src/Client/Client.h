@@ -7,9 +7,7 @@
 
 #include "../GlobalConstant.h"
 
-#ifdef _WIN32
-    #include "WinSock2.h"
-#endif
+#include "Helper.h"
 
 class Client {
     std::ofstream _keylogFile;
