@@ -1,1 +1,1 @@
-clang++ main.cpp server/*.cpp Message/*.cpp server/function_unix/*.cpp server/function_cross/*.cpp server/function_unix/Objects/*.cpp Utils/*.cpp -o ../bin/server.exe -std=c++17 -Wall -lstdc++
+clang++ main.cpp server/*.cpp Message/*.cpp server/function_unix/*.cpp server/function_cross/*.cpp server/function_unix/Objects/*.cpp Utils/*.cpp -o ../bin/server.exe -std=c++17 -Wall -lstdc++ -framework ApplicationServices -framework Carbon -framework CoreFoundation
