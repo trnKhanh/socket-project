@@ -16,18 +16,44 @@
 // TODO: Change STOP_APP TO KILL BY PID
 Client::Client()
 {
+    int choice;
     std::vector<std::string> servers;
-    if (this->discover(servers) == -1) 
-        exit(1);
-    
-    std::cout << "Found following server:\n";
-    for (auto u: servers)
-    {
-        std::cout << u << "\n";
-    }
-
-    std::cout << "Choose server to connect: ";
-    std::string name = servers[0];
+    do{
+        if (this->discover(servers) == -1) 
+            exit(1);
+        if (servers.empty())
+        {
+            std::cout << "Found no server\n";
+            exit(1);
+        }
+        std::cout << "Found following server:\n";
+        for (int i = 0; i < servers.size(); ++i)
+        {
+            std::cout << i + 1 << ". " << servers[i] << "\n";
+        }
+        std::cout << servers.size() + 1 << ". Retry\n";
+        std::cout << servers.size() + 2 << ". Exit\n";
+        while(1)
+        {
+            try{
+                std::string buffer;
+                std::cout << "Choose server to connect (1" << '-' << servers.size() + 2 << "): ";
+                std::getline(std::cin, buffer);
+                choice = std::stoi(buffer);
+            }
+            catch(...)
+            {
+                choice = 0;
+            }
+            if (choice < 1 || choice > servers.size() + 2) 
+            {
+                std::cerr << "Error: Invalid selection.\n";
+            } else break;
+        }
+    } while (choice == servers.size() + 1);
+    if (choice == servers.size() + 2)
+        exit(0);
+    std::string name = servers[choice - 1];
     // std::cin >> name;
     this->_serverName = name;
     addrinfo hints, *servinfo;
@@ -36,7 +62,7 @@ Client::Client()
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
-    if ((status = getaddrinfo(name.c_str(), SERVER_PORT, &hints, &servinfo)) != 0)
+    if ((status = getaddrinfo(this->_serverName.c_str(), SERVER_PORT, &hints, &servinfo)) != 0)
     {
         std::cerr << "client: getaddrinfo " << gai_strerror(status) << "\n";
         exit(1);
@@ -75,6 +101,7 @@ Client::~Client()
 
 int Client::discover(std::vector<std::string> &servers)
 {
+    servers.clear();
     int status;
     int disfd;
     int yes = 1;
@@ -157,7 +184,7 @@ int Client::discover(std::vector<std::string> &servers)
     pfds[0].fd = disfd;
     while(1)
     {
-        int rv = poll(pfds, 1, 5000);
+        int rv = poll(pfds, 1, 1000);
         if (rv == -1)
         {
             close(disfd); 

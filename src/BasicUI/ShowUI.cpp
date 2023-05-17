@@ -6,14 +6,34 @@
 #include <thread>
 #include <fstream>
 
-void showMenu(std::vector<std::string> &menu)
+int showMenu(std::vector<std::string> &menu)
 {
     std::cout << "\n-----------------------------\n";
     for (int i = 0; i < menu.size(); ++i)
     {
         std::cout << i + 1 << ". " << menu[i] << std::endl;
     }
-    std::cout << "Select (1" << '-' << menu.size() << "): ";
+
+    int choice;
+    while(1)
+    {
+        try{
+            std::string buffer;
+            std::cout << "Select (1" << '-' << menu.size() << "): ";
+            std::getline(std::cin, buffer);
+            choice = std::stoi(buffer);
+        }
+        catch(...)
+        {
+            choice = 0;
+        }
+        if (choice < 1 || choice > menu.size()) 
+        {
+            std::cerr << "Error: Invalid selection.\n";
+        } else break;
+    }
+
+    return choice;
 }
 void writeKeylog()
 {
@@ -30,7 +50,7 @@ int showUI(Client &client)
         "Keylog",
         "Screenshot",
         "List directory tree",
-        "Back"
+        "Exit"
     };
     std::vector<std::string> appMenu = {
         "List app",
@@ -45,24 +65,12 @@ int showUI(Client &client)
     };
     while (1)
     {
-        showMenu(mainMenu);
-        int choice;
-        while (std::cin >> choice)
-        {
-            std::cin.ignore();
-            if (choice < 1 || choice > mainMenu.size()) continue;
-            break;
-        }
+        int choice = showMenu(mainMenu);
+        
         if (choice == 1)
         {
-            showMenu(appMenu);
-            int choice;
-            while (std::cin >> choice)
-            {
-                std::cin.ignore();
-                if (choice < 1 || choice > appMenu.size()) continue;
-                break;
-            }
+            int choice = showMenu(appMenu);
+            
             if (choice == 1)
             {
                 if (client.listApp())
@@ -101,14 +109,8 @@ int showUI(Client &client)
         }
         else if (choice == 3)
         {
-            showMenu(keylogMenu);
-            int choice;
-            while (std::cin >> choice)
-            {
-                std::cin.ignore();
-                if (choice < 1 || choice > keylogMenu.size()) continue;
-                break;
-            }
+            int choice = showMenu(keylogMenu);
+
             if (choice == 1)
             {
                 if (client.startKeylog())

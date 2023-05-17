@@ -1,10 +1,19 @@
 #pragma once
-#include <vector>
+#include <set>
 #include <iostream>
+#include <thread>
 #include <ApplicationServices/ApplicationServices.h>
 
-extern CFRunLoopRef event_loop;
-extern std::vector<int> keylogfds;
+extern std::set<int> keylogfds;
 
-void startKeylogHelper();
-void stopKeylogHelper();
+
+class Keylogger{
+    CFRunLoopRef _event_loop;
+    std::thread _keylogThread;
+
+    void startKeylogHelper();
+public:
+    Keylogger();
+    ~Keylogger();
+
+};

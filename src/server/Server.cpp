@@ -17,20 +17,20 @@
 #include <vector>
 #include <string>
 #include "../Utils/InUtils.h"
-#include "helper.h"
 #include <mutex>
 
 Server::~Server()
 {
-    std::cout << "closed" << "\n";
-    stopKeylogHelper();
+    std::cerr << "Server closed" << "\n";
+    for (pollfd pfd: this->pfds)
+    {
+        close(pfd.fd);
+    }
     close(this->listener);
     close(this->disfd);
-    this->keylogThread.join();
 }
 Server::Server()
 {
-    this->keylogThread = std::thread(startKeylogHelper);
     char port[] = SERVER_PORT;
     int status;
     int yes = 1;
@@ -67,8 +67,8 @@ Server::Server()
         break;
     }
     
-    std::cout << "Server started on " << getIpStr(p->ai_addr) << ":"; 
-    std::cout << ntohs(((sockaddr_in *)p->ai_addr)->sin_port) << "\n";
+    std::cerr << "Server started on " << getIpStr(p->ai_addr) << ":"; 
+    std::cerr << ntohs(((sockaddr_in *)p->ai_addr)->sin_port) << "\n";
     
     freeaddrinfo(res);
     if (p == NULL)
@@ -117,8 +117,8 @@ Server::Server()
         break;
     }
     
-    std::cout << "Discover server started on " << getIpStr(p->ai_addr) << ":"; 
-    std::cout << ntohs(((sockaddr_in *)p->ai_addr)->sin_port) << "\n";
+    std::cerr << "Discover server started on " << getIpStr(p->ai_addr) << ":"; 
+    std::cerr << ntohs(((sockaddr_in *)p->ai_addr)->sin_port) << "\n";
     
     freeaddrinfo(res);
     if (p == NULL)
@@ -152,7 +152,6 @@ void Server::start()
             // get one ready to read
             if (pfd.revents & POLLIN)
             {
-                std::cout << "POLLIN " << pfd.fd << std::endl;
                 // listener ready to read - new connection
                 if (pfd.fd == this->listener)
                 {
@@ -163,16 +162,23 @@ void Server::start()
                         perror("accept");
                     } else
                     {
+                        std::cerr << "NEW CONNECTION: ";
                         this->pfds.push_back(pollfd());
                         this->pfds.back().fd = newfd;
                         this->pfds.back().events = POLLIN;
 
-                        std::cout << "New connection from " << getIpStr((sockaddr *)&remote_address)
+                        std::ostringstream os;
+                        
+                        int addrport = ntohs(((sockaddr_in *)&remote_address)->sin_port);
+                        os << getIpStr((sockaddr *)&remote_address) << ":" << addrport;
+                        this->_clientIP[newfd] = os.str();
+                        std::cerr << "New connection from " << getIpStr((sockaddr *)&remote_address) << ":" << addrport
                              << " on socket " << newfd << "\n";
                     }
                 }
                 else if (pfd.fd == this->disfd) // receive discover message
                 {  
+                    
                     Request r;
                     addrlen = sizeof(remote_address);
                     if (recvfromRequest(this->disfd, r, 0, (sockaddr *)&remote_address, &addrlen) == -1)
@@ -181,8 +187,9 @@ void Server::start()
                     }
                     else if (r.type() == DISCOVER_REQUEST)
                     {
-                        std::cout << "Receive discover message from " << getIpStr((sockaddr *)&remote_address) << ":"; 
-                        std::cout << ntohs(((sockaddr_in *)&remote_address)->sin_port) << "\n";
+                        std::cerr << "DISCOVER: ";
+                        std::cerr << "Receive discover message from " << getIpStr((sockaddr *)&remote_address) << ":"; 
+                        std::cerr << ntohs(((sockaddr_in *)&remote_address)->sin_port) << "\n";
                         Response msg(DISCOVER_RESPONSE, OK_CODE, 0, NULL);
                         
                         if (sendtoResponse(this->disfd, msg, 0, (sockaddr *)&remote_address, addrlen) == -1)
@@ -200,32 +207,60 @@ void Server::start()
                         int sockfd = pfd.fd;
                         this->pfds[i] = this->pfds.back();
                         this->pfds.pop_back();
-                        std::cerr << "Connection closed\n";
+                        if (keylogfds.find(sockfd) != keylogfds.end())
+                            keylogfds.erase(keylogfds.find(sockfd));
+                        
+                        std::cerr << "Connection closed from " << this->_clientIP[sockfd] << "\n";
+                        this->_clientIP.erase(this->_clientIP.find(sockfd));
                         close(sockfd);
                     } 
                     else
                     {
                         Response res;
-                        
+                        std::cerr << "REQUEST: ";
                         if (buffer.type() == LIST_APP_REQUEST)
+                        {
+                            std::cerr << "Received List App Request from " << this->_clientIP[pfd.fd] << "\n";
                             res = this->listApp();
+                        }
                         else if (buffer.type() == START_APP_REQUEST)
+                        {
+                            std::cerr << "Received Start App Request (" << (char *)buffer.data() << ") from " << this->_clientIP[pfd.fd] << "\n";
                             res = this->startApp((char *)buffer.data());
+                        }
                         else if (buffer.type() == STOP_APP_REQUEST)
+                        {
+                            std::cerr << "Received Stop App Request (" << (char *)buffer.data() << ") from " << this->_clientIP[pfd.fd] << "\n";
                             res = this->stopApp((char *)buffer.data());
+                        }
                         else if (buffer.type() == LIST_PROC_REQUEST)
+                        {
+                            std::cerr << "Received List Process Request from " << this->_clientIP[pfd.fd] << "\n";
                             res = this->listProcesss();
+                        }
                         else if (buffer.type() == SCREENSHOT_REQUEST)
+                        {
+                            std::cerr << "Received Screenshot Request from " << this->_clientIP[pfd.fd] << "\n";
                             res = this->screenshot();
+                        }
                         else if (buffer.type() == START_KEYLOG_REQUEST)
+                        {
+                            std::cerr << "Received Start Keylog Request from " << this->_clientIP[pfd.fd] << "\n";
                             res = this->startKeylog(pfd.fd);
+                        }
                         else if (buffer.type() == STOP_KEYLOG_REQUEST)
+                        {
+                            std::cerr << "Received Stop Keylog Request from " << this->_clientIP[pfd.fd] << "\n";
                             res = this->stopKeylog(pfd.fd);
+                        }
                         else if (buffer.type() == DIR_TREE_REQUEST)
+                        {
+                            std::cerr << "Received List Directory Tree Request from " << this->_clientIP[pfd.fd] << "\n";
                             res = this->dirTree((char *)buffer.data());
+                        }
                         else 
                         {
-                            std::cerr << "Invalid request received on socket " << pfd.fd << std::endl;
+                            std::cerr << "Received Invalid Request from " << this->_clientIP[pfd.fd] << "\n";
                             continue;
                         }
                         if (sendResponse(pfd.fd, res, 0) == -1)
@@ -236,7 +271,6 @@ void Server::start()
                         {
                             this->pfds[i] = this->pfds.back();
                             this->pfds.pop_back();
-                            std::cerr << "Keylog connection closed\n";
                             close(pfd.fd);
                         }
                     }
@@ -314,29 +348,23 @@ Response Server::startKeylog(int sockfd)
 {
     std::mutex m;
     std::lock_guard l(m);
-    std::cout << "Start keylog" << std::endl;
-    keylogfds.push_back(sockfd);
+    keylogfds.insert(sockfd);
     return Response(CMD_RESPONSE_EMPTY, OK_CODE, 0, NULL);
 }
 Response Server::stopKeylog(int sockfd)
 {
     std::mutex m;
     std::lock_guard l(m);
-    for (int i = 0; i < keylogfds.size(); ++i)
-    {
-        if (keylogfds[i] == sockfd)
-        {
-            keylogfds[i] = keylogfds.back();
-            keylogfds.pop_back();
-            break;
-        }
-    }
+
+    if (keylogfds.find(sockfd) != keylogfds.end())
+        keylogfds.erase(keylogfds.find(sockfd));
+
     return Response(CMD_RESPONSE_EMPTY, OK_CODE, 0, NULL);
 }
 
 Response Server::dirTree(const char *pathName)
 {
-    std::cout << "Processing list directory tree rooted at " << pathName << std::endl;
+    std::cerr << "Processing list directory tree rooted at " << pathName << std::endl;
     std::string buffer;
     int status = listDirTreeHelper(pathName, buffer);
     uint32_t errCode;

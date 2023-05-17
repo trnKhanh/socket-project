@@ -7,7 +7,6 @@
 
 int screenshotHelper(std::vector<char> &buffer)
 {
-    std::cout << "start to screenshot\n";
     if (system("screencapture screenshot.png"))
     {
         return -1;
