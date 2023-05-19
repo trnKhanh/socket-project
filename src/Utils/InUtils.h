@@ -1,5 +1,9 @@
 #pragma once
-#include <arpa/inet.h>
+#ifdef __APPLE__
+    #include <arpa/inet.h>
+#elif _WIN32
+    #include <winsock2.h>
+#endif
 #include <string>
 
 void *getInAddress(sockaddr *addr);
