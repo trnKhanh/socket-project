@@ -1,9 +1,8 @@
 #include "Server.h"
+#include "../Utils/InUtils.h"
 #include <iostream>
 #include <string.h> 
-#include <vector>
 #include <string>
-#include "../Utils/InUtils.h"
 #include <mutex>
 #include <sstream>
 
@@ -47,7 +46,14 @@ Server::Server()
     #endif
     char port[] = SERVER_PORT;
     int status;
+
+    #ifdef _WIN32
+    int tmp = 1;
+    char *yes = (char*)&tmp;
+    #elif __APPLE__
     int yes = 1;
+    #endif
+
     addrinfo hints, *res;
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_INET;

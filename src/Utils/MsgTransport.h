@@ -1,12 +1,6 @@
 #pragma once
 #include <iostream>
-#ifdef __APPLE__
-    #include <sys/socket.h>
-    #include <arpa/inet.h>
-#elif _WIN32
-    #include <winsock2.h>
-    #include <WS2tcpip.h>
-#endif
+#include "../InLibs.h"
 
 int sendAll(int sockfd, const void *msg, size_t len, int flag);
 int recvAll(int sockfd, void *msg, size_t len, int flag);
