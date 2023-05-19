@@ -1,4 +1,11 @@
+
 */test
 .vscode
 screenshot.png
 screenShotFromServer.png
+bin/
+.vscode/
+*.log
+*.png
+*.exe
+

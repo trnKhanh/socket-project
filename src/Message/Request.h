@@ -1,10 +1,13 @@
 #pragma once
 #include <stdint.h>
 
-#include "WinSock2.h"
-#include <WS2tcpip.h>
+#ifdef _WIN32
+    #include <WinSock2.h>
+    #include <WS2tcpip.h>
+#elif __APPLE__
+    #include <arpa/inet.h> 
+#endif
 
-// Structure Macro message
 #define DISCOVER_REQUEST (uint8_t)0x80
 #define NOTCMD_REQUEST (uint8_t)0x00
 
@@ -37,10 +40,10 @@ public:
 
     uint8_t type();
     void * data();
+    
+    friend int sendRequest(int sockfd, const Request &msg, int flag);
+    friend int recvRequest(int sockfd, Request &msg, int flag);
 
-    friend int sendRequest(SOCKET sockfd, const Request &msg, int flag);
-    friend int recvRequest(SOCKET sockfd, Request &msg, int flag);
-
-    friend int sendtoRequest(SOCKET sockfd, const Request &msg, int flag, const sockaddr *addr, socklen_t addrlen);
-    friend int recvfromRequest(SOCKET sockfd, Request &msg, int flag, sockaddr *addr, socklen_t *addrlen);
+    friend int sendtoRequest(int sockfd, const Request &msg, int flag, const sockaddr *addr, socklen_t addrlen);
+    friend int recvfromRequest(int sockfd, Request &msg, int flag, sockaddr *addr, socklen_t *addrlen);
 };
