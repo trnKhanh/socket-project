@@ -1,11 +1,9 @@
 #pragma once
-#include <vector>
-#include "../GlobalConstant.h"
-#include "../Message/Request.h"
-#include "../Message/Response.h"
-#include <thread>
+#include "../InLibs.h"
 #include "Helper.h"
 #include <map>
+#include <thread>
+#include <vector>
 #define BACKLOG 10
 
 class Server {

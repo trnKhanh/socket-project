@@ -1,8 +1,7 @@
 #pragma once
+#include "../InLibs.h"
 #include <vector>
-#include <arpa/inet.h>
 #include <string>
-#include "../GlobalConstant.h"
 #include <thread>
 #include <fstream>
 

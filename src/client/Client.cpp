@@ -1,13 +1,6 @@
 #include "Client.h"
-#include <sys/socket.h>
-#include <unistd.h>
-#include <netdb.h>
 #include <cstring>
 #include <iostream>
-#include "../Message/Request.h"
-#include "../Message/Response.h"
-#include "../Utils/InUtils.h"
-#include <poll.h>
 #include <fstream>
 #include <future>
 #include <chrono>

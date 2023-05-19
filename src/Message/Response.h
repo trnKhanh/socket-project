@@ -1,13 +1,6 @@
 #pragma once
 #include <stdint.h>
-
-#ifdef __APPLE__
-    #include <arpa/inet.h>
-#elif _WIN32
-    #include "../Utils/ConvertUtils.h"
-    #include <winSock2.h>
-    #include <WS2tcpip.h>
-#endif
+#include "../InLibs.h"
 
 #define DISCOVER_RESPONSE (uint8_t)0x80
 #define CMD_RESPONSE_EMPTY (uint8_t)0x01
