@@ -14,12 +14,45 @@ Server::~Server()
     }
     close(this->listener);
     close(this->disfd);
+    #ifdef _WIN32
+        WSACleanup();
+    #endif
 }
 Server::Server()
 {
+    #ifdef _WIN32
+        WSADATA wsaData;
+        auto wVersionRequested = MAKEWORD(2, 2); // Get version of winsock
+        int retCode = WSAStartup(wVersionRequested, &wsaData);
+
+        if (retCode != 0)
+            std::cout << "Startup failed: " << retCode << "\n";
+            
+        std::cout << "Return Code: " << retCode << "\n";
+        std::cout << "Version Used: " << (int) LOBYTE(wsaData.wVersion) << "." << (int) HIBYTE(wsaData.wVersion) << "\n";
+        std::cout << "Version Supported: " << (int) LOBYTE(wsaData.wHighVersion) << "." << (int) HIBYTE(wsaData.wHighVersion) << "\n";
+        std::cout << "Implementation: " << wsaData.szDescription << "\n";
+        std::cout << "System Status: " << wsaData.szSystemStatus << "\n";
+        std::cout << "\n";
+
+        if(LOBYTE(wsaData.wVersion) != LOBYTE(wVersionRequested) || HIBYTE(wsaData.wVersion) != HIBYTE(wVersionRequested)){
+            std::cout << "Supported Version is too low.\n";
+            WSACleanup();
+            exit(0);
+        }
+
+        std::cout << "WSAStartup sucess.\n\n";
+    #endif
     char port[] = SERVER_PORT;
     int status;
+
+    #ifdef _WIN32
+    int tmp = 1;
+    char *yes = (char*)&tmp;
+    #elif __APPLE__
     int yes = 1;
+    #endif
+
     addrinfo hints, *res;
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_INET;
