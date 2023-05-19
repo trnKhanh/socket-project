@@ -5,6 +5,7 @@
 #include <string>
 #include "../Utils/InUtils.h"
 #include <mutex>
+#include <sstream>
 
 Server::~Server()
 {
@@ -15,9 +16,35 @@ Server::~Server()
     }
     close(this->listener);
     close(this->disfd);
+    #ifdef _WIN32
+        WSACleanup();
+    #endif
 }
 Server::Server()
 {
+    #ifdef _WIN32
+        WSADATA wsaData;
+        auto wVersionRequested = MAKEWORD(2, 2); // Get version of winsock
+        int retCode = WSAStartup(wVersionRequested, &wsaData);
+
+        if (retCode != 0)
+            std::cout << "Startup failed: " << retCode << "\n";
+            
+        std::cout << "Return Code: " << retCode << "\n";
+        std::cout << "Version Used: " << (int) LOBYTE(wsaData.wVersion) << "." << (int) HIBYTE(wsaData.wVersion) << "\n";
+        std::cout << "Version Supported: " << (int) LOBYTE(wsaData.wHighVersion) << "." << (int) HIBYTE(wsaData.wHighVersion) << "\n";
+        std::cout << "Implementation: " << wsaData.szDescription << "\n";
+        std::cout << "System Status: " << wsaData.szSystemStatus << "\n";
+        std::cout << "\n";
+
+        if(LOBYTE(wsaData.wVersion) != LOBYTE(wVersionRequested) || HIBYTE(wsaData.wVersion) != HIBYTE(wVersionRequested)){
+            std::cout << "Supported Version is too low.\n";
+            WSACleanup();
+            exit(0);
+        }
+
+        std::cout << "WSAStartup sucess.\n\n";
+    #endif
     char port[] = SERVER_PORT;
     int status;
     int yes = 1;
@@ -39,9 +66,10 @@ Server::Server()
         if ((this->listener = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1)
         {
             perror("server: socket");
+            std::cout << 1;
             continue;
         }
-        if (setsockopt(this->listener, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
+        if (setsockopt(this->listener, SOL_SOCKET, SO_REUSEADDR, (char*)&yes, sizeof(int)) == -1) {
             perror("server: setsockopt");
             exit(1); 
         }
@@ -91,7 +119,7 @@ Server::Server()
             perror("server discover: socket");
             continue;
         }
-        if (setsockopt(this->disfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
+        if (setsockopt(this->disfd, SOL_SOCKET, SO_REUSEADDR, (char*)&yes, sizeof(int)) == -1) {
             perror("server discover: setsockopt");
             exit(1); 
         }

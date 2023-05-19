@@ -19,7 +19,5 @@
     
     #define close closesocket
     #define poll WSAPoll
-
-    int close(int fd) {return closesocket(fd);}
 #endif
 

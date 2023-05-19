@@ -1,7 +1,7 @@
 Build for Server:
-g++ src/Server/*.cpp src/Server/function_Windows/*.cpp src/Server/function_Windows/Object/*.cpp src/mainserver.cpp src/Utils/*.cpp src/Message/*.cpp -o bin/server.exe  -lgdiplus -lgdi32 -lws2_32
+g++ src/Server/*.cpp src/Server/function_Windows/*.cpp src/mainserver.cpp src/Utils/*.cpp src/Message/*.cpp -o bin/server.exe  -lgdiplus -lgdi32 -lws2_32
 Build and run for Server:
-g++ src/Server/*.cpp src/Server/function_Windows/*.cpp src/Server/function_Windows/Object/*.cpp src/mainserver.cpp src/Utils/*.cpp src/Message/*.cpp -o bin/server.exe  -lgdiplus -lgdi32 -lws2_32; bin/server.exe
+g++ src/Server/*.cpp src/Server/function_Windows/*.cpp  src/mainserver.cpp src/Utils/*.cpp src/Message/*.cpp -o bin/server.exe  -lgdiplus -lgdi32 -lws2_32; bin/server.exe
 
 
 Build for Client:
