@@ -1,14 +1,13 @@
 #include "MsgTransport.h"
 
-#ifdef _WIN32
-    #include "WinSock2.h"
-#endif
+#include <sys/socket.h>
 
-//TCP
-int sendAll(SOCKET sockfd, const void *msg, size_t len, int flag){
+int sendAll(int sockfd, const void *msg, size_t len, int flag)
+{
     int totalByteSent = 0;
 
-    while (totalByteSent < len){
+    while (totalByteSent < len)
+    {
         int byteSent = send(sockfd, (char*)msg + totalByteSent, len - totalByteSent, flag);
 
         if (byteSent <= 0)
@@ -19,13 +18,12 @@ int sendAll(SOCKET sockfd, const void *msg, size_t len, int flag){
     
     return 0;
 }
-
-//TCP
-int recvAll(SOCKET sockfd, void *msg, size_t len, int flag){
+int recvAll(int sockfd, void *msg, size_t len, int flag)
+{
     int totalByteRecv = 0;
-    while (totalByteRecv < len){
+    while (totalByteRecv < len)
+    {
         int byteRecv = recv(sockfd, (char*)msg + totalByteRecv, len - totalByteRecv, flag);
-
         if (byteRecv <= 0)
             return -1;
 
@@ -35,12 +33,13 @@ int recvAll(SOCKET sockfd, void *msg, size_t len, int flag){
     return 0;
 }
 
-
-//UDP
-int sendtoAll(SOCKET sockfd, const void *msg, size_t len, int flag, const sockaddr* addr, socklen_t addrlen){
+int sendtoAll(int sockfd, const void *msg, size_t len, int flag, const sockaddr* addr, socklen_t addrlen)
+{
     int totalByteSent = 0;
 
-    while (totalByteSent < len){
+    while (totalByteSent < len)
+    {
+
         int byteSent = sendto(sockfd, (char*)msg + totalByteSent, len - totalByteSent, flag, addr, addrlen);
 
         if (byteSent <= 0)
@@ -50,11 +49,11 @@ int sendtoAll(SOCKET sockfd, const void *msg, size_t len, int flag, const sockad
     }
     return 0;
 }
-
-//UDP
-int recvfromAll(SOCKET sockfd, void *msg, size_t len, int flag, sockaddr* addr, socklen_t *addrlen){
+int recvfromAll(int sockfd, void *msg, size_t len, int flag, sockaddr* addr, socklen_t *addrlen)
+{
     int totalByteRecv = 0;
-    while (totalByteRecv < len){
+    while (totalByteRecv < len)
+    {
         int byteRecv = recvfrom(sockfd, (char*)msg + totalByteRecv, len - totalByteRecv, flag, addr, addrlen);
 
         if (byteRecv <= 0)
