@@ -7,6 +7,7 @@
 
 int listProcessesHelper(std::vector<Process> &Processes)
 {
+    // name to get all processes
     int name[] = {CTL_KERN, KERN_PROC, KERN_PROC_ALL};
     kinfo_proc *p;
     size_t len;
@@ -24,6 +25,7 @@ int listProcessesHelper(std::vector<Process> &Processes)
         free(p);
         return -1;
     }
+    // p contains the information about all process
     int processNumber = len / sizeof(kinfo_proc);
     Processes.clear();
     for (int i = 0; i < processNumber; ++i)

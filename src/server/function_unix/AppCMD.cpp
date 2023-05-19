@@ -44,6 +44,6 @@ int startAppHelper(const std::string &appName)
 }
 int stopAppHelper(const std::string &appName)
 {
-    if (system(("killall \"" + appName + "\"").c_str())) return -1;
+    if (system(("killall -9 \"" + appName + "\"").c_str())) return -1;
     return 0;
 }

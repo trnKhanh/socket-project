@@ -13,19 +13,19 @@
 class Response {
     struct {
         uint8_t _type;
-        uint32_t _errcode; 
+        uint8_t _errcode; 
         uint64_t _length;
     } _header;
     void *_data;
 public:
-    Response(uint8_t _type, uint32_t _errcode, uint64_t _length, void *_data);
+    Response(uint8_t _type, uint8_t _errcode, uint64_t _length, void *_data);
     Response();
     ~Response();
     Response(const Response &r);
     Response& operator = (const Response &r);
     uint8_t type();
     void *data();
-    uint32_t errCode();
+    uint8_t errCode();
     uint64_t length();
 
     friend int sendResponse(int sockfd, const Response &msg, int flag);

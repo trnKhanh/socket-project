@@ -2,7 +2,7 @@
 #include "../Utils/MsgTransport.h"
 #include <cstring>
 
-Response::Response(uint8_t _type, uint32_t _errcode, uint64_t _length, void *_data)
+Response::Response(uint8_t _type, uint8_t _errcode, uint64_t _length, void *_data)
 {
     this->_header._type = _type;
     this->_header._errcode = _errcode;
@@ -50,7 +50,7 @@ void *Response::data()
 {
     return this->_data;
 }
-uint32_t Response::errCode()
+uint8_t Response::errCode()
 {
     return this->_header._errcode;
 }
