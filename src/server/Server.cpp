@@ -1,16 +1,3 @@
-#ifdef __APPLE__
-    #include <sys/types.h> 
-    #include <sys/socket.h> 
-    #include <arpa/inet.h> 
-    #include <poll.h>
-    #include <netdb.h>
-    #include <unistd.h> 
-    #include <netinet/in.h>
-    #include <signal.h>
-#elif __WIN32__
-    #define poll WSAPOLL
-#endif
-
 #include "Server.h"
 #include <iostream>
 #include <string.h> 

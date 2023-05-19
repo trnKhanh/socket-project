@@ -1,8 +1,7 @@
-#include "Menu.h"
+#include "ShowUI.h"
 #include <string>
 #include <vector>
 #include <iostream>
-#include "../client/Client.h"
 #include <thread>
 #include <fstream>
 
