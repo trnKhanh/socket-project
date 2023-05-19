@@ -1,5 +1,4 @@
 #include "MsgTransport.h"
-#include <sys/socket.h>
 
 int sendAll(int sockfd, const void *msg, size_t len, int flag)
 {
