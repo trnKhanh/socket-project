@@ -1,6 +1,5 @@
 #pragma once
 #include <vector>
-#include <poll.h>
 #include "../GlobalConstant.h"
 #include "../Message/Request.h"
 #include "../Message/Response.h"

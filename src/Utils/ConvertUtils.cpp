@@ -1,9 +1,10 @@
+#ifdef _WIN32
 #include "ConvertUtils.h"
 
 #include <cstring>
 
 // host to network (uint64_t)
-uint64_t my_htonll(uint64_t value){
+uint64_t htonll(uint64_t value){
     uint64_t result;
     uint8_t* ptr_value = (uint8_t*)&value;
     uint8_t* ptr_result = (uint8_t*)&result;
@@ -13,7 +14,7 @@ uint64_t my_htonll(uint64_t value){
 }
 
 // network to host (uint64_t)
-uint64_t my_ntohll(uint64_t value){
+uint64_t ntohll(uint64_t value){
     uint64_t result;
     uint8_t* ptr_value = (uint8_t*)&value;
     uint8_t* ptr_result = (uint8_t*)&result;
@@ -60,3 +61,4 @@ void string_to_listchar(char*& res, string s){
         res[i] = s[i];
     res[sz] = '\0';
 }
+#endif
