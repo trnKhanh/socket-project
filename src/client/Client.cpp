@@ -5,6 +5,7 @@
 #include <future>
 #include <chrono>
 #include <sstream>
+#include <filesystem>
 
 // TODO: Change STOP_APP TO KILL BY PID
 Client::Client()
@@ -152,13 +153,13 @@ int Client::discover(std::vector<std::string> &servers)
             perror("client: socket");
             continue;
         }
-        if (setsockopt(disfd, SOL_SOCKET, SO_BROADCAST, &yes, sizeof(yes)) == -1)
+        if (setsockopt(disfd, SOL_SOCKET, SO_BROADCAST, (char*) &yes, sizeof(yes)) == -1)
         {
             perror("client: setsockopt");
             freeaddrinfo(addr);
             return -1;
         }
-        if (setsockopt(disfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) == -1)
+        if (setsockopt(disfd, SOL_SOCKET, SO_REUSEADDR, (char*) &yes, sizeof(yes)) == -1)
         {
             perror("client: setsockopt");
             freeaddrinfo(addr);

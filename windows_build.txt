@@ -5,6 +5,6 @@ g++ src/Server/*.cpp src/Server/function_Windows/*.cpp  src/mainserver.cpp src/U
 
 
 Build for Client:
-g++ src/Client/*.cpp src/mainclient.cpp src/Utils/*.cpp src/Message/*.cpp -o bin/client.exe -lws2_32
+g++ src/Client/*.cpp src/mainclient.cpp src/Utils/*.cpp src/Message/*.cpp src/BasicUI/*.cpp -o bin/client.exe -lws2_32
 Build and run for Client:
-g++ src/Client/*.cpp src/mainclient.cpp src/Utils/*.cpp src/Message/*.cpp -o bin/client.exe -lws2_32; bin/client.exe
+g++ src/Client/*.cpp src/mainclient.cpp src/Utils/*.cpp src/Message/*.cpp src/BasicUI/*.cpp -o bin/client.exe -lws2_32; bin/client.exe

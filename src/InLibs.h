@@ -9,8 +9,8 @@
     #include <netinet/in.h>
     #include <signal.h>
 #elif _WIN32
-    #include <windows.h>
     #include <winsock2.h>
+    #include <windows.h>
     #include <ws2tcpip.h>
     #include "Utils/ConvertUtils.h"
     #define close closesocket
