@@ -1,0 +1,9 @@
+client:
+clang++ src/mainclient.cpp src/client/*.cpp src/Message/*.cpp src/Utils/*.cpp src/BasicUI/*.cpp -o bin/client.exe -std=c++17 -Wall -lstdc++
+
+server: 
+clang++ src/mainserver.cpp src/server/*.cpp src/Message/*.cpp src/Utils/*.cpp src/server/function_Unix/*.cpp src/server/function_Unix/Objects/*.cpp -o bin/server.exe -std=c++17 -Wall -lstdc++ -framework ApplicationServices -framework Carbon -framework CoreFoundation
+
+both:
+
+clang++ src/mainserver.cpp src/server/*.cpp src/Message/*.cpp src/Utils/*.cpp src/server/function_Unix/*.cpp src/server/function_Unix/Objects/*.cpp -o bin/server.exe -std=c++17 -Wall -lstdc++ -framework ApplicationServices -framework Carbon -framework CoreFoundation && clang++ src/mainclient.cpp src/client/*.cpp src/Message/*.cpp src/Utils/*.cpp src/BasicUI/*.cpp -o bin/client.exe -std=c++17 -Wall -lstdc++
