@@ -47,10 +47,10 @@ Server::Server()
     int status;
 
     #ifdef _WIN32
-    int tmp = 1;
-    char *yes = (char*)&tmp;
+        int tmp = 1;
+        char *yes = (char*)&tmp;
     #elif __APPLE__
-    int yes = 1;
+        int yes = 1;
     #endif
 
     addrinfo hints, *res;
@@ -156,7 +156,7 @@ void Server::start()
 
     sockaddr_storage remote_address;
     socklen_t addrlen;
-    int cnt = 0;
+    
     while (1)
     {
         int poll_count = poll(this->pfds.data(), pfds.size(), -1);

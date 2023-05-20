@@ -124,10 +124,10 @@ int Client::discover(std::vector<std::string> &servers)
     int status;
     int disfd;
     #ifdef _WIN32
-    int tmp = 1;
-    char *yes = (char*)&tmp;
+        int tmp = 1;
+        char *yes = (char*)&tmp;
     #elif __APPLE__
-    int yes = 1;
+        int yes = 1;
     #endif
     sockaddr_storage serverAddr;
     socklen_t addrlen = sizeof(serverAddr);
