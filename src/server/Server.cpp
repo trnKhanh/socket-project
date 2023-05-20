@@ -4,6 +4,7 @@
 #include <string.h> 
 #include <string>
 #include <mutex>
+#include <sstream>
 
 Server::~Server()
 {
@@ -71,9 +72,10 @@ Server::Server()
         if ((this->listener = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1)
         {
             perror("server: socket");
+            std::cout << 1;
             continue;
         }
-        if (setsockopt(this->listener, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
+        if (setsockopt(this->listener, SOL_SOCKET, SO_REUSEADDR, (char*)&yes, sizeof(int)) == -1) {
             perror("server: setsockopt");
             exit(1); 
         }
@@ -123,7 +125,7 @@ Server::Server()
             perror("server discover: socket");
             continue;
         }
-        if (setsockopt(this->disfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
+        if (setsockopt(this->disfd, SOL_SOCKET, SO_REUSEADDR, (char*)&yes, sizeof(int)) == -1) {
             perror("server discover: setsockopt");
             exit(1); 
         }

@@ -1,0 +1,5 @@
+Build Server:
+clang++ mainserver.cpp server/*.cpp Message/*.cpp server/function_unix/*.cpp server/function_unix/Objects/*.cpp Utils/*.cpp -o ../bin/server.exe -std=c++17 -Wall -lstdc++ -framework ApplicationServices -framework Carbon -framework CoreFoundation && clang++ mainclient.cpp client/*.cpp Message/*.cpp Utils/*.cpp BasicUI/*.cpp -o ../bin/client.exe -std=c++17 -Wall -lstdc++
+
+Build Client:
+clang++ mainclient.cpp client/*.cpp Message/*.cpp Utils/*.cpp BasicUI/*.cpp -o ../bin/client.exe -std=c++17 -Wall -lstdc++
