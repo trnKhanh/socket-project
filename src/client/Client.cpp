@@ -243,6 +243,7 @@ void Client::recvKeylog()
         if (recvResponse(this->_keylogfd, res, 0))
         {
             close(this->_keylogfd);
+            this->_keylogFile.close();
             break;
         }
         this->_keylogFile << (char*) res.data() << std::flush;
