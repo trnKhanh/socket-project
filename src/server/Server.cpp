@@ -80,7 +80,25 @@ Server::Server()
         }
         break;
     }
-    
+
+    char host[256];
+    struct hostent *host_entry;
+    if (gethostname(host, sizeof(host)) == -1)
+    {
+        perror("gethostname");
+        exit(1);
+    }
+    host_entry = gethostbyname(host); //find host information
+    if (host_entry == NULL)
+    {
+        perror("gethostbyname");
+        exit(1);
+    }
+    std::cout << "Current Host Name: " << host << "\n";
+    std::cout << "Host IP: \n";
+    for(int i = 0; host_entry->h_addr_list[i] != NULL; ++i) 
+        std::cout << "  " << inet_ntoa(*((struct in_addr*) host_entry->h_addr_list[i])) << "\n";
+
     std::cerr << "Server started on " << getIpStr(p->ai_addr) << ":"; 
     std::cerr << ntohs(((sockaddr_in *)p->ai_addr)->sin_port) << "\n";
     
