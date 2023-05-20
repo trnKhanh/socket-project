@@ -5,8 +5,8 @@
 #include <future>
 #include <chrono>
 #include <sstream>
+#include <filesystem>
 
-// TODO: Change STOP_APP TO KILL BY PID
 Client::Client()
 {
     #ifdef _WIN32
