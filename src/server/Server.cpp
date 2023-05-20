@@ -4,6 +4,7 @@
 #include <string.h> 
 #include <string>
 #include <mutex>
+#include <sstream>
 
 Server::~Server()
 {
@@ -45,13 +46,7 @@ Server::Server()
     #endif
     char port[] = SERVER_PORT;
     int status;
-    
-    #ifdef _WIN32
-        int tmp = 1;
-        char *yes = (char*) tmp;
-    #elif __APPLE__
-        int *yes = (int*)malloc(4);
-    #endif
+    int yes = 1;
 
     addrinfo hints, *res;
     memset(&hints, 0, sizeof hints);
@@ -73,7 +68,7 @@ Server::Server()
             perror("server: socket");
             continue;
         }
-        if (setsockopt(this->listener, SOL_SOCKET, SO_REUSEADDR, yes, sizeof(int)) == -1) {
+        if (setsockopt(this->listener, SOL_SOCKET, SO_REUSEADDR, (sockopt_type)&yes, sizeof(int)) == -1) {
             perror("server: setsockopt");
             exit(1); 
         }
@@ -123,7 +118,7 @@ Server::Server()
             perror("server discover: socket");
             continue;
         }
-        if (setsockopt(this->disfd, SOL_SOCKET, SO_REUSEADDR, yes, sizeof(int)) == -1) {
+        if (setsockopt(this->disfd, SOL_SOCKET, SO_REUSEADDR, (sockopt_type)&yes, sizeof(int)) == -1) {
             perror("server discover: setsockopt");
             exit(1); 
         }
@@ -149,9 +144,6 @@ Server::Server()
     this->pfds.push_back(pollfd());
     this->pfds.back().fd = this->disfd;
     this->pfds.back().events = POLLIN;
-    #ifdef __APPLE__
-        free(yes);
-    #endif
 }
 void Server::start()
 {

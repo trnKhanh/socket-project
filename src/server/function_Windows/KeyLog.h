@@ -12,7 +12,6 @@ class Keylogger {
     std::thread _t;
     std::promise<void> _p;
     HHOOK _hHook;
-    std::vector<int> keylogfds;
 
     void keylogFunc(std::future<void> future);
 public:

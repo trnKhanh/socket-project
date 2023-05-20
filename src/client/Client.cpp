@@ -123,12 +123,7 @@ int Client::discover(std::vector<std::string> &servers)
     servers.clear();
     int status;
     int disfd;
-    #ifdef _WIN32
-        int tmp = 1;
-        char *yes = (char*)&tmp;
-    #elif __APPLE__
-        int yes = 1;
-    #endif
+    int yes = 1;
     sockaddr_storage serverAddr;
     socklen_t addrlen = sizeof(serverAddr);
     addrinfo hints, *addr;
@@ -152,13 +147,13 @@ int Client::discover(std::vector<std::string> &servers)
             perror("client: socket");
             continue;
         }
-        if (setsockopt(disfd, SOL_SOCKET, SO_BROADCAST, &yes, sizeof(yes)) == -1)
+        if (setsockopt(disfd, SOL_SOCKET, SO_BROADCAST, (sockopt_type)&yes, sizeof(yes)) == -1)
         {
             perror("client: setsockopt");
             freeaddrinfo(addr);
             return -1;
         }
-        if (setsockopt(disfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) == -1)
+        if (setsockopt(disfd, SOL_SOCKET, SO_REUSEADDR, (sockopt_type)&yes, sizeof(yes)) == -1)
         {
             perror("client: setsockopt");
             freeaddrinfo(addr);
