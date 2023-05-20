@@ -1,3 +1,5 @@
+#ifdef __APPLE__
+
 #include "ListProcesses.h"
 #include <sys/sysctl.h>
 #include <stdio.h>
@@ -77,3 +79,5 @@ int getProcessByPIDHelper(int PID, Process &res)
     free(p);
     return 0;
 }
+
+#endif

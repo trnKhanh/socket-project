@@ -1,3 +1,5 @@
+#ifdef __APPLE__
+
 #include "Screenshot.h"
 #include <stdlib.h>
 #include <cstdio>
@@ -28,3 +30,5 @@ int screenshotHelper(std::vector<char> &buffer)
     }
     return 0;
 }
+
+#endif

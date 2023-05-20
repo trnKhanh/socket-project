@@ -1,3 +1,5 @@
+#ifdef __APPLE__
+
 #pragma once
 #include <sys/sysctl.h>
 #include <libproc.h>
@@ -16,3 +18,5 @@ public:
 
     std::string toString();
 };
+
+#endif

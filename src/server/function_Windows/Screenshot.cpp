@@ -1,3 +1,5 @@
+#ifdef _WIN32
+
 #include "Screenshot.h"
 
 #include <gdiplus.h>
@@ -88,3 +90,5 @@ int GetEncoderClsid(const WCHAR* format, CLSID* pClsid){
     free(pImageCodecInfo);
     return -1;  // Failure
 }
+
+#endif

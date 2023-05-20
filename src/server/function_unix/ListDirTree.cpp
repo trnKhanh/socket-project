@@ -1,3 +1,5 @@
+#ifdef __APPLE__
+
 #include "ListDirTree.h"
 #include <filesystem>
 #include <sstream>
@@ -40,3 +42,5 @@ int dfs(const char *pathName, std::ostringstream &os, int depth)
     }
     return 0;
 }
+
+#endif

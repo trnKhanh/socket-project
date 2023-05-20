@@ -1,3 +1,5 @@
+#ifdef __APPLE__
+
 #include "Process.h"
 #include <sstream>
 Process::Process()
@@ -25,3 +27,5 @@ std::string Process::toString()
     os << this->_pid << ": " << this->_name;
     return os.str();   
 }
+
+#endif

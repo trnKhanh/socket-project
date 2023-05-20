@@ -1,3 +1,5 @@
+#ifdef _WIN32
+
 #include "Keylog.h"
 #include <iostream>
 #include <sstream>
@@ -82,3 +84,5 @@ LRESULT CALLBACK KeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam){
     // Call next hook
     return CallNextHookEx(NULL, nCode, wParam, lParam);
 }
+
+#endif

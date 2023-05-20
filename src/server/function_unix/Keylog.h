@@ -1,3 +1,5 @@
+#ifdef __APPLE__
+
 #pragma once
 #include <set>
 #include <iostream>
@@ -17,3 +19,5 @@ public:
     ~Keylogger();
 
 };
+
+#endif

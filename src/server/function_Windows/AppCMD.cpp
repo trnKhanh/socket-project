@@ -1,3 +1,5 @@
+#ifdef _WIN32
+
 #include "AppCMD.h"
 
 #include <sstream>
@@ -125,3 +127,5 @@ void EnumerateInstalledApplications(std::set <std::string>& s, HKEY key, const c
         RegCloseKey(hUninstallKey);
     }
 }
+
+#endif

@@ -1,3 +1,5 @@
+#ifdef __APPLE__
+
 #include "Keylog.h"
 #include "../../Utils/MsgTransport.h"
 #include "../../Message/Response.h"
@@ -94,3 +96,5 @@ Keylogger::~Keylogger()
     CFRunLoopStop(this->_event_loop);
     this->_keylogThread.join();
 }
+
+#endif

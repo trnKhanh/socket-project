@@ -1,3 +1,5 @@
+#ifdef _WIN32
+
 #pragma once
 
 #include <WinSock2.h>
@@ -22,3 +24,4 @@ extern std::set<int> keylogfds;
 std::pair <std::string, bool> changeToKeyPress(DWORD dwKeyCode); // get key press from DWORD
 LRESULT CALLBACK KeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam);
 
+#endif

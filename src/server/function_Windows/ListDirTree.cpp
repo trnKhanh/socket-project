@@ -1,3 +1,5 @@
+#ifdef _WIN32
+
 #include "ListDirTree.h"
 
 #include <Windows.h>
@@ -38,3 +40,5 @@ string listDirectoryTree(const char* path, int indent){
     string result = stream.str();
     return result;
 }
+
+#endif

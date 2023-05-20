@@ -1,3 +1,5 @@
+#ifdef _WIN32
+
 #include "ListProcesses.h"
 
 #include <sstream>
@@ -30,3 +32,5 @@ int listProcessesStrHelper(std::string &res){
     res = stream.str();
     return 0;
 }
+
+#endif

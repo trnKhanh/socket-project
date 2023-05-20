@@ -1,3 +1,5 @@
+#ifdef __APPLE__
+
 #include "AppCMD.h"
 #include "../../Utils/Exec.h"
 #include "../../Utils/String.h"
@@ -47,3 +49,5 @@ int stopAppHelper(const std::string &appName)
     if (system(("killall -9 \"" + appName + "\"").c_str())) return -1;
     return 0;
 }
+
+#endif
