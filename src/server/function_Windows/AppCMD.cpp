@@ -6,20 +6,6 @@
 #include <tlhelp32.h>
 
 int listAppHelper(std::string& res){
-    // // Run the WMIC command to retrieve the list of installed applications
-    // FILE* fp = _popen("WMIC /Node:localhost product get name,version", "r");
-    // if(fp == NULL)
-    //     return -1;
-
-    // std::stringstream builder;
-    // char buffer[1024];
-    // // Read the output of the WMIC command and send it to the client over the socket
-
-    // while (fgets(buffer, sizeof(buffer), fp) != NULL) 
-    //     builder << buffer;
-    // res = builder.str();
-    // _pclose(fp);
-
     std::set <std::string> myAppsList;
 
     EnumerateInstalledApplications(myAppsList, HKEY_LOCAL_MACHINE, "Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall");

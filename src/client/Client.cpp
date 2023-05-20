@@ -247,7 +247,7 @@ void Client::recvKeylog()
         this->_keylogFile << (char*) res.data() << std::flush;
     }
 }
-int Client::listApp()
+int Client::listApp(std::string &result)
 {
     Request req(LIST_APP_REQUEST, 0, NULL);
     if (sendRequest(this->sockfd, req, 0))
@@ -257,7 +257,7 @@ int Client::listApp()
         return -1;
     if (res.errCode() == FAIL_CODE || res.type() != CMD_RESPONSE_STR)
         return -1;
-    std::cout << (char*)res.data() << "\n";
+    result = std::string((char*)res.data());
     return 0;
 }
 int Client::startApp(const std::string &appName)
@@ -285,7 +285,7 @@ int Client::stopApp(const std::string &appName)
     return 0;
 }
 
-int Client::listProcesss()
+int Client::listProcesss(std::string &result)
 {
     Request req(LIST_PROC_REQUEST, 0, NULL);
     if (sendRequest(this->sockfd, req, 0))
@@ -295,7 +295,7 @@ int Client::listProcesss()
         return -1;
     if (res.errCode() == FAIL_CODE || res.type() != CMD_RESPONSE_STR)
         return -1;
-    std::cout << (char*)res.data() << "\n";
+    result = std::string((char*)res.data());
     return 0;
 }
 
@@ -404,7 +404,7 @@ int Client::stopKeylog()
     return 0;
 }
 
-int Client::dirTree(const std::string pathName)
+int Client::dirTree(const std::string &pathName, std::string &result)
 {
     Request req(DIR_TREE_REQUEST, pathName.size() + 1, (void *)pathName.c_str());
     if (sendRequest(this->sockfd, req, 0))
@@ -414,9 +414,8 @@ int Client::dirTree(const std::string pathName)
         return -1;
     if (res.errCode() == FAIL_CODE || res.type() != CMD_RESPONSE_STR)
     {
-        std::cout << "invalid response\n";
         return -1;
     }
-    std::cout << (char*)res.data() << "\n";
+    result = std::string((char*)res.data());
     return 0;
 }

@@ -18,16 +18,16 @@ public:
 
     int discover(std::vector<std::string> &servers);
 
-    int listApp();  
+    int listApp(std::string &result);  
     int startApp(const std::string &appName);
     int stopApp(const std::string &appName);
     
-    int listProcesss();
+    int listProcesss(std::string &result);
 
     int screenshot();
 
     int startKeylog();
     int stopKeylog();
 
-    int dirTree(const std::string pathName); 
+    int dirTree(const std::string &pathName, std::string &result); 
 };

@@ -5,8 +5,18 @@
 #include <thread>
 #include <fstream>
 
+void clrscr()
+{
+    std::cout << "\033[2J\033[1;1H";
+}
+void pause_until_press()
+{
+    std::cout << "\n(Press Enter to continue)\n";
+    std::cin.get();
+}
 int showMenu(std::vector<std::string> &menu)
 {
+    clrscr();
     std::cout << "\n-----------------------------\n";
     for (int i = 0; i < menu.size(); ++i)
     {
@@ -31,7 +41,7 @@ int showMenu(std::vector<std::string> &menu)
             std::cerr << "Error: Invalid selection.\n";
         } else break;
     }
-
+    clrscr();
     return choice;
 }
 void writeKeylog()
@@ -62,6 +72,7 @@ int showUI(Client &client)
         "Stop keylog",
         "Back"
     };
+    std::string result;
     while (1)
     {
         int choice = showMenu(mainMenu);
@@ -72,9 +83,13 @@ int showUI(Client &client)
             
             if (choice == 1)
             {
-                if (client.listApp())
+                if (client.listApp(result))
                 {
-                    std::cerr << "List app: fail request\n";
+                    std::cerr << "List app: Fail.\n";
+                } else
+                {
+                    std::cout << "Applications list:\n\n";
+                    std::cout << result << "\n";
                 }
             }
             else if (choice <= 3)
@@ -86,14 +101,20 @@ int showUI(Client &client)
                 {
                     if (client.startApp(s.c_str()))
                     {
-                        std::cerr << "Start app: fail request\n";
+                        std::cerr << "Start app: Fail\n";
+                    } else
+                    {
+                        std::cout << "Start app: Successful\n";
                     }
                 }
                 else 
                 {
                     if (client.stopApp(s.c_str()))
                     {
-                        std::cerr << "Stop app: fail request\n";
+                        std::cerr << "Stop app: Fail\n";
+                    } else
+                    {
+                        std::cout << "Stop app: successful request\n";
                     }
                 }
             }
@@ -101,9 +122,13 @@ int showUI(Client &client)
         }
         else if (choice == 2)
         {
-            if (client.listProcesss())
+            if (client.listProcesss(result))
             {
-                std::cerr << "List processes: fail request\n";
+                std::cerr << "List processes: Fail\n";
+            } else
+            {
+                std::cout << "Processes list:\n\n";
+                std::cout << result << "\n";
             }
         }
         else if (choice == 3)
@@ -114,13 +139,19 @@ int showUI(Client &client)
             {
                 if (client.startKeylog())
                 {
-                    std::cerr << "Start keylog: fail request\n";
+                    std::cerr << "Start keylog: Fail\n";
+                } else
+                {
+                    std::cout << "Start keylog: Successful\n";
                 }
             } else if (choice == 2)
             {
                 if (client.stopKeylog())
                 {
-                    std::cerr << "Stop keylog: fail request\n";
+                    std::cerr << "Stop keylog: Fail\n";
+                } else
+                {
+                    std::cout << "Stop keylog: Successful\n";
                 }
             } else continue;
         } 
@@ -128,7 +159,10 @@ int showUI(Client &client)
         {
             if (client.screenshot())
             {
-                std::cerr << "Screenshot: fail request\n";
+                std::cerr << "Screenshot: Fail\n";
+            } else
+            {
+                std::cout << "Screenshot: Successful\n";
             }
         }
         else if (choice == 5)
@@ -136,11 +170,16 @@ int showUI(Client &client)
             std::string s;
             std::cout << "Enter path name: ";
             std::getline(std::cin, s);
-            if (client.dirTree(s.c_str()))
+            if (client.dirTree(s.c_str(), result))
             {
-                std::cerr << "List directory tree: fail request\n";
+                std::cerr << "List directory tree: Fail\n";
+            } else
+            {
+                std::cout << "Directory tree:\n\n";
+                std::cout << result << "\n";
             }
         } else break;
+        pause_until_press();
     }
     return 0;
 }
