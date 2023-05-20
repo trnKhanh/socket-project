@@ -113,7 +113,7 @@ Client::~Client()
         if (this->stopKeylog())
             this->_keylogThread.join();
     }
-    close(this->sockfd);
+    closesocket(this->sockfd);
     #ifdef _WIN32
         WSACleanup();
     #endif
@@ -163,7 +163,7 @@ int Client::discover(std::vector<std::string> &servers)
         if (bind(disfd, p->ai_addr, p->ai_addrlen) == -1)
         {
             perror("client: bind");
-            close(disfd);
+            closesocket(disfd);
             continue;
         }
         break;
@@ -207,7 +207,7 @@ int Client::discover(std::vector<std::string> &servers)
         int rv = poll(pfds, 1, 1000);
         if (rv == -1)
         {
-            close(disfd); 
+            closesocket(disfd); 
             perror("poll");
             return -1;
         }
@@ -220,7 +220,7 @@ int Client::discover(std::vector<std::string> &servers)
         if (buffer.type() == DISCOVER_RESPONSE)
             servers.push_back(getIpStr((sockaddr *)&serverAddr));
     }
-    close(disfd);
+    closesocket(disfd);
     return 0;
 }
 
@@ -242,7 +242,7 @@ void Client::recvKeylog()
         Response res;
         if (recvResponse(this->_keylogfd, res, 0))
         {
-            close(this->_keylogfd);
+            closesocket(this->_keylogfd);
             this->_keylogFile.close();
             break;
         }
@@ -364,18 +364,18 @@ int Client::startKeylog()
 
     if (sendRequest(this->_keylogfd, req, 0))
     {
-        close(this->_keylogfd);
+        closesocket(this->_keylogfd);
         return -1;
     }
     Response res;
     if (recvResponse(this->_keylogfd, res, 0))
     {
-        close(this->_keylogfd);
+        closesocket(this->_keylogfd);
         return -1;
     }
     if (res.errCode() == FAIL_CODE || res.type() != CMD_RESPONSE_EMPTY)
     {
-        close(this->_keylogfd);
+        closesocket(this->_keylogfd);
         return -1;
     }
     int cnt = 0;

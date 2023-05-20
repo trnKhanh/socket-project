@@ -11,10 +11,10 @@ Server::~Server()
     std::cerr << "Server closed" << "\n";
     for (pollfd pfd: this->pfds)
     {
-        close(pfd.fd);
+        closesocket(pfd.fd);
     }
-    close(this->listener);
-    close(this->disfd);
+    closesocket(this->listener);
+    closesocket(this->disfd);
     #ifdef _WIN32
         WSACleanup();
     #endif
@@ -75,7 +75,7 @@ Server::Server()
         if (bind(this->listener, p->ai_addr, p->ai_addrlen) == -1)
         {
             perror("server: bind");
-            close(this->listener);
+            closesocket(this->listener);
             continue;
         }
         break;
@@ -143,7 +143,7 @@ Server::Server()
         if (bind(this->disfd, p->ai_addr, p->ai_addrlen) == -1)
         {
             perror("server discover: bind");
-            close(this->disfd);
+            closesocket(this->disfd);
             continue;
         }
         break;
@@ -244,7 +244,7 @@ void Server::start()
                         
                         std::cerr << "Connection closed from " << this->_clientIP[sockfd] << "\n";
                         this->_clientIP.erase(this->_clientIP.find(sockfd));
-                        close(sockfd);
+                        closesocket(sockfd);
                     } 
                     else
                     {
@@ -303,7 +303,7 @@ void Server::start()
                         {
                             this->pfds[i] = this->pfds.back();
                             this->pfds.pop_back();
-                            close(pfd.fd);
+                            closesocket(pfd.fd);
                         }
                     }
 
