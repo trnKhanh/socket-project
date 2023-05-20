@@ -44,13 +44,6 @@ int showMenu(std::vector<std::string> &menu)
     clrscr();
     return choice;
 }
-void writeKeylog()
-{
-    std::mutex m;
-    std::lock_guard l(m);
-    std::ofstream os("keylog.log");
-    
-}
 int showUI(Client &client)
 {
     std::vector<std::string> mainMenu = {
