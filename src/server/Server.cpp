@@ -5,10 +5,11 @@
 #include <string>
 #include <mutex>
 #include <sstream>
+#include <time.h>
 
 Server::~Server()
 {
-    std::cerr << "Server closed" << "\n";
+    std::cerr << "Server closed" << std::endl;
     for (pollfd pfd: this->pfds)
     {
         closesocket(pfd.fd);
@@ -27,14 +28,14 @@ Server::Server()
         int retCode = WSAStartup(wVersionRequested, &wsaData);
 
         if (retCode != 0)
-            std::cout << "Startup failed: " << retCode << "\n";
+            std::cout << "Startup failed: " << retCode << std::endl;
             
-        std::cout << "Return Code: " << retCode << "\n";
-        std::cout << "Version Used: " << (int) LOBYTE(wsaData.wVersion) << "." << (int) HIBYTE(wsaData.wVersion) << "\n";
-        std::cout << "Version Supported: " << (int) LOBYTE(wsaData.wHighVersion) << "." << (int) HIBYTE(wsaData.wHighVersion) << "\n";
-        std::cout << "Implementation: " << wsaData.szDescription << "\n";
-        std::cout << "System Status: " << wsaData.szSystemStatus << "\n";
-        std::cout << "\n";
+        std::cout << "Return Code: " << retCode << std::endl;
+        std::cout << "Version Used: " << (int) LOBYTE(wsaData.wVersion) << "." << (int) HIBYTE(wsaData.wVersion) << std::endl;
+        std::cout << "Version Supported: " << (int) LOBYTE(wsaData.wHighVersion) << "." << (int) HIBYTE(wsaData.wHighVersion) << std::endl;
+        std::cout << "Implementation: " << wsaData.szDescription << std::endl;
+        std::cout << "System Status: " << wsaData.szSystemStatus << std::endl;
+        std::cout << std::endl;
 
         if(LOBYTE(wsaData.wVersion) != LOBYTE(wVersionRequested) || HIBYTE(wsaData.wVersion) != HIBYTE(wVersionRequested)){
             std::cout << "Supported Version is too low.\n";
@@ -56,7 +57,7 @@ Server::Server()
 
     if ((status = getaddrinfo(NULL, port, &hints, &res)) == -1)
     {
-        std::cerr << "getaddrinfo: " << gai_strerror(status) << "\n";
+        std::cerr << "getaddrinfo: " << gai_strerror(status) << std::endl;
         exit(1);
     }
 
@@ -94,13 +95,13 @@ Server::Server()
         perror("gethostbyname");
         exit(1);
     }
-    std::cout << "Current Host Name: " << host << "\n";
+    std::cout << "Current Host Name: " << host << std::endl;
     std::cout << "Host IP: \n";
     for(int i = 0; host_entry->h_addr_list[i] != NULL; ++i) 
-        std::cout << "  " << inet_ntoa(*((struct in_addr*) host_entry->h_addr_list[i])) << "\n";
+        std::cout << "  " << inet_ntoa(*((struct in_addr*) host_entry->h_addr_list[i])) << std::endl;
 
     std::cerr << "Server started on " << getIpStr(p->ai_addr) << ":"; 
-    std::cerr << ntohs(((sockaddr_in *)p->ai_addr)->sin_port) << "\n";
+    std::cerr << ntohs(((sockaddr_in *)p->ai_addr)->sin_port) << std::endl;
     
     freeaddrinfo(res);
     if (p == NULL)
@@ -124,7 +125,7 @@ Server::Server()
 
     if ((status = getaddrinfo(NULL, port, &hints, &res)) == -1)
     {
-        std::cerr << "getaddrinfo: " << gai_strerror(status) << "\n";
+        std::cerr << "getaddrinfo: " << gai_strerror(status) << std::endl;
         exit(1);
     }
 
@@ -150,7 +151,7 @@ Server::Server()
     }
     
     std::cerr << "Discover server started on " << getIpStr(p->ai_addr) << ":"; 
-    std::cerr << ntohs(((sockaddr_in *)p->ai_addr)->sin_port) << "\n";
+    std::cerr << ntohs(((sockaddr_in *)p->ai_addr)->sin_port) << std::endl;
     
     freeaddrinfo(res);
     if (p == NULL)
@@ -194,6 +195,8 @@ void Server::start()
                         perror("accept");
                     } else
                     {
+                        time_t now = time(0);
+                        std::cerr << ctime(&now) << "    ";
                         std::cerr << "NEW CONNECTION: ";
                         this->pfds.push_back(pollfd());
                         this->pfds.back().fd = newfd;
@@ -205,7 +208,7 @@ void Server::start()
                         os << getIpStr((sockaddr *)&remote_address) << ":" << addrport;
                         this->_clientIP[newfd] = os.str();
                         std::cerr << "New connection from " << getIpStr((sockaddr *)&remote_address) << ":" << addrport
-                             << " on socket " << newfd << "\n";
+                             << " on socket " << newfd << std::endl;
                     }
                 }
                 else if (pfd.fd == this->disfd) // receive discover message
@@ -219,9 +222,11 @@ void Server::start()
                     }
                     else if (r.type() == DISCOVER_REQUEST)
                     {
+                        time_t now = time(0);
+                        std::cerr << ctime(&now) << "    ";
                         std::cerr << "DISCOVER: ";
                         std::cerr << "Receive discover message from " << getIpStr((sockaddr *)&remote_address) << ":"; 
-                        std::cerr << ntohs(((sockaddr_in *)&remote_address)->sin_port) << "\n";
+                        std::cerr << ntohs(((sockaddr_in *)&remote_address)->sin_port) << std::endl;
                         Response msg(DISCOVER_RESPONSE, OK_CODE, 0, NULL);
                         
                         if (sendtoResponse(this->disfd, msg, 0, (sockaddr *)&remote_address, addrlen) == -1)
@@ -241,58 +246,61 @@ void Server::start()
                         this->pfds.pop_back();
                         if (keylogfds.find(sockfd) != keylogfds.end())
                             keylogfds.erase(keylogfds.find(sockfd));
-                        
-                        std::cerr << "Connection closed from " << this->_clientIP[sockfd] << "\n";
+                        time_t now = time(0);
+                        std::cerr << ctime(&now) << "    ";
+                        std::cerr << "Connection closed from " << this->_clientIP[sockfd] << std::endl;
                         this->_clientIP.erase(this->_clientIP.find(sockfd));
                         closesocket(sockfd);
                     } 
                     else
                     {
                         Response res;
+                        time_t now = time(0);
+                        std::cerr << ctime(&now) << "    ";
                         std::cerr << "REQUEST: ";
                         if (buffer.type() == LIST_APP_REQUEST)
                         {
-                            std::cerr << "Received List App Request from " << this->_clientIP[pfd.fd] << "\n";
+                            std::cerr << "Received List App Request from " << this->_clientIP[pfd.fd] << std::endl;
                             res = this->listApp();
                         }
                         else if (buffer.type() == START_APP_REQUEST)
                         {
-                            std::cerr << "Received Start App Request (" << (char *)buffer.data() << ") from " << this->_clientIP[pfd.fd] << "\n";
+                            std::cerr << "Received Start App Request (" << (char *)buffer.data() << ") from " << this->_clientIP[pfd.fd] << std::endl;
                             res = this->startApp((char *)buffer.data());
                         }
                         else if (buffer.type() == STOP_APP_REQUEST)
                         {
-                            std::cerr << "Received Stop App Request (" << (char *)buffer.data() << ") from " << this->_clientIP[pfd.fd] << "\n";
+                            std::cerr << "Received Stop App Request (" << (char *)buffer.data() << ") from " << this->_clientIP[pfd.fd] << std::endl;
                             res = this->stopApp((char *)buffer.data());
                         }
                         else if (buffer.type() == LIST_PROC_REQUEST)
                         {
-                            std::cerr << "Received List Process Request from " << this->_clientIP[pfd.fd] << "\n";
+                            std::cerr << "Received List Process Request from " << this->_clientIP[pfd.fd] << std::endl;
                             res = this->listProcesss();
                         }
                         else if (buffer.type() == SCREENSHOT_REQUEST)
                         {
-                            std::cerr << "Received Screenshot Request from " << this->_clientIP[pfd.fd] << "\n";
+                            std::cerr << "Received Screenshot Request from " << this->_clientIP[pfd.fd] << std::endl;
                             res = this->screenshot();
                         }
                         else if (buffer.type() == START_KEYLOG_REQUEST)
                         {
-                            std::cerr << "Received Start Keylog Request from " << this->_clientIP[pfd.fd] << "\n";
+                            std::cerr << "Received Start Keylog Request from " << this->_clientIP[pfd.fd] << std::endl;
                             res = this->startKeylog(pfd.fd);
                         }
                         else if (buffer.type() == STOP_KEYLOG_REQUEST)
                         {
-                            std::cerr << "Received Stop Keylog Request from " << this->_clientIP[pfd.fd] << "\n";
+                            std::cerr << "Received Stop Keylog Request from " << this->_clientIP[pfd.fd] << std::endl;
                             res = this->stopKeylog(pfd.fd);
                         }
                         else if (buffer.type() == DIR_TREE_REQUEST)
                         {
-                            std::cerr << "Received List Directory Tree Request from " << this->_clientIP[pfd.fd] << "\n";
+                            std::cerr << "Received List Directory Tree Request from " << this->_clientIP[pfd.fd] << std::endl;
                             res = this->dirTree((char *)buffer.data());
                         }
                         else 
                         {
-                            std::cerr << "Received Invalid Request from " << this->_clientIP[pfd.fd] << "\n";
+                            std::cerr << "Received Invalid Request from " << this->_clientIP[pfd.fd] << std::endl;
                             continue;
                         }
                         if (sendResponse(pfd.fd, res, 0) == -1)

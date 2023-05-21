@@ -15,14 +15,14 @@ Client::Client()
         int retCode = WSAStartup(wVersionRequested, &wsaData);
 
         if (retCode != 0)
-            std::cout << "Startup failed: " << retCode << "\n";
+            std::cout << "Startup failed: " << retCode << std::endl;
             
-        std::cout << "Return Code: " << retCode << "\n";
-        std::cout << "Version Used: " << (int) LOBYTE(wsaData.wVersion) << "." << (int) HIBYTE(wsaData.wVersion) << "\n";
-        std::cout << "Version Supported: " << (int) LOBYTE(wsaData.wHighVersion) << "." << (int) HIBYTE(wsaData.wHighVersion) << "\n";
-        std::cout << "Implementation: " << wsaData.szDescription << "\n";
-        std::cout << "System Status: " << wsaData.szSystemStatus << "\n";
-        std::cout << "\n";
+        std::cout << "Return Code: " << retCode << std::endl;
+        std::cout << "Version Used: " << (int) LOBYTE(wsaData.wVersion) << "." << (int) HIBYTE(wsaData.wVersion) << std::endl;
+        std::cout << "Version Supported: " << (int) LOBYTE(wsaData.wHighVersion) << "." << (int) HIBYTE(wsaData.wHighVersion) << std::endl;
+        std::cout << "Implementation: " << wsaData.szDescription << std::endl;
+        std::cout << "System Status: " << wsaData.szSystemStatus << std::endl;
+        std::cout << std::endl;
 
         if(LOBYTE(wsaData.wVersion) != LOBYTE(wVersionRequested) || HIBYTE(wsaData.wVersion) != HIBYTE(wVersionRequested)){
             std::cout << "Supported Version is too low.\n";
@@ -45,7 +45,7 @@ Client::Client()
         std::cout << "Found following server:\n";
         for (int i = 0; i < servers.size(); ++i)
         {
-            std::cout << i + 1 << ". " << servers[i] << "\n";
+            std::cout << i + 1 << ". " << servers[i] << std::endl;
         }
         std::cout << servers.size() + 1 << ". Retry\n";
         std::cout << servers.size() + 2 << ". Exit\n";
@@ -66,6 +66,7 @@ Client::Client()
                 std::cerr << "Error: Invalid selection.\n";
             } else break;
         }
+        std::cout << "\033[2J\033[1;1H";
     } while (choice == servers.size() + 1);
     if (choice == servers.size() + 2)
         exit(0);
@@ -80,7 +81,7 @@ Client::Client()
     hints.ai_socktype = SOCK_STREAM;
     if ((status = getaddrinfo(this->_serverName.c_str(), SERVER_PORT, &hints, &servinfo)) != 0)
     {
-        std::cerr << "client: getaddrinfo " << gai_strerror(status) << "\n";
+        std::cerr << "client: getaddrinfo " << gai_strerror(status) << std::endl;
         exit(1);
     }
 
@@ -136,7 +137,7 @@ int Client::discover(std::vector<std::string> &servers)
 
     if ((status = getaddrinfo(NULL, "0", &hints, &addr)) != 0)
     {
-        std::cerr << "client: getaddrinfo: " << gai_strerror(status) << "\n";
+        std::cerr << "client: getaddrinfo: " << gai_strerror(status) << std::endl;
         return -1;
     }
 
@@ -177,17 +178,17 @@ int Client::discover(std::vector<std::string> &servers)
     }
 
     std::cout << "Broadcast discover message from " << getIpStr(p->ai_addr) << "::"; 
-    std::cout << ntohs(((sockaddr_in *)p->ai_addr)->sin_port) << "\n";
+    std::cout << ntohs(((sockaddr_in *)p->ai_addr)->sin_port) << std::endl;
 
     freeaddrinfo(addr);
     if ((status = getaddrinfo("255.255.255.255", SERVER_PORT, &hints, &addr)) != 0)
     {
-        std::cerr << "client: getaddrinfo: " << gai_strerror(status) << "\n";
+        std::cerr << "client: getaddrinfo: " << gai_strerror(status) << std::endl;
         return -1;
     }
     p = addr;
     std::cout << "Broadcast discover message to " << getIpStr(p->ai_addr) << "::"; 
-    std::cout << ntohs(((sockaddr_in *)p->ai_addr)->sin_port) << "\n";
+    std::cout << ntohs(((sockaddr_in *)p->ai_addr)->sin_port) << std::endl;
     if (p == NULL)
     {
         std::cerr << "client: broadcast fail\n";
@@ -335,7 +336,7 @@ int Client::startKeylog()
     hints.ai_socktype = SOCK_STREAM;
     if ((status = getaddrinfo(this->_serverName.c_str(), SERVER_PORT, &hints, &servinfo)) != 0)
     {
-        std::cerr << "client: getaddrinfo " << gai_strerror(status) << "\n";
+        std::cerr << "client: getaddrinfo " << gai_strerror(status) << std::endl;
         exit(1);
     }
 
