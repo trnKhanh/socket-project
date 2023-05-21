@@ -116,7 +116,7 @@ Server::Server()
     }
     this->pfds.push_back(pollfd());
     this->pfds.back().fd = this->listener;
-    this->pfds.back().events = POLLIN;
+    this->pfds.back().events = (POLLIN | POLLHUP);
 
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_INET;
@@ -162,7 +162,7 @@ Server::Server()
 
     this->pfds.push_back(pollfd());
     this->pfds.back().fd = this->disfd;
-    this->pfds.back().events = POLLIN;
+    this->pfds.back().events = (POLLIN | POLLHUP);
 }
 void Server::start()
 {
@@ -183,7 +183,7 @@ void Server::start()
         {
             auto pfd = this->pfds[i];
             // get one ready to read
-            if (pfd.revents & POLLIN)
+            if (pfd.revents & (POLLIN | POLLHUP))
             {
                 // listener ready to read - new connection
                 if (pfd.fd == this->listener)
@@ -200,7 +200,7 @@ void Server::start()
                         std::cerr << "NEW CONNECTION: ";
                         this->pfds.push_back(pollfd());
                         this->pfds.back().fd = newfd;
-                        this->pfds.back().events = POLLIN;
+                        this->pfds.back().events = (POLLIN | POLLHUP);
 
                         std::ostringstream os;
                         
