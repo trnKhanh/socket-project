@@ -4,6 +4,5 @@
 int main(int argc, char *argv[])
 {
     Server s;
-    // std::cout << (char*)s.listProcesss().data() << std::endl;
     s.start();
 }
